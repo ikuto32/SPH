@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(SPH LANGUAGES CXX)
 
+enable_testing()
+
 option(USE_CUDA "Build with CUDA support" ON)
 
 if(USE_CUDA)
@@ -9,6 +11,7 @@ if(USE_CUDA)
 endif()
 
 add_library(sph STATIC src/sph/core/world.cpp)
+set_target_properties(sph PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(sph PUBLIC src)
 
 if(USE_CUDA)
@@ -16,3 +19,4 @@ if(USE_CUDA)
 endif()
 
 add_subdirectory(bindings)
+add_subdirectory(tests)
