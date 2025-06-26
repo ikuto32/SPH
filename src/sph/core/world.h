@@ -80,6 +80,7 @@ public:
 
     void update(float deltaTime);
     const float (*getPositions() const)[2] { return pos; }
+    const float (*getVelocities() const)[2] { return vel; }
 
 private:
     void predictedPos(float deltaTime);
