@@ -1,31 +1,43 @@
 # SPH
 
-This repository contains a Windows example project implementing a simple
-Smoothed Particle Hydrodynamics (SPH) simulation.
+This repository contains a simple Smoothed Particle Hydrodynamics (SPH) simulation.
 
-## Building the library
+## Building the library (Visual Studio)
 
-The project is distributed as a Visual Studio solution.  Open
+The original project is distributed as a Visual Studio solution.  Open
 `WindowsProject_optimization_SPH.sln` with Visual Studio 2022 (or newer)
 and build either the `Debug` or `Release` configuration for `x64`.
 The resulting binaries are written to `x64/Debug` or `x64/Release`.
 
-## Building the Python module
+## Building with CMake
 
-Python bindings can be built with `pybind11`.  After installing
-`pybind11` and a working C++ toolchain run the following command in the
-repository root:
+The library and Python bindings can also be built using CMake.  On both
+Linux and Windows the typical workflow is:
 
 ```console
-python setup.py build_ext --inplace
+mkdir build
+cd build
+cmake -DUSE_CUDA=OFF ..   # set to ON when the CUDA toolkit is available
+cmake --build . --target _sph
 ```
 
-This will create a `sph` module that can be imported from Python.
+This will produce a Python extension named `_sph` inside the build
+directory.
+
+## Using the Python module
+
+The bindings expose a `PyWorld` class:
+
+```python
+from _sph import PyWorld
+w = PyWorld()
+w.step(1/60.0)
+positions = w.get_positions()
+```
 
 ## Running the example GUI
 
-After building the solution an executable named
+After building the Visual Studio solution an executable named
 `WindowsProject_optimization_SPH.exe` will be produced inside the build
 output directory.  Launching this executable starts the example GUI
 showing the SPH simulation.
-
