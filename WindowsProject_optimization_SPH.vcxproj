@@ -136,9 +136,12 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WindowsProject_optimization_SPH.h" />
+    <ClInclude Include="src\sph\core\world.h" />
+    <ClInclude Include="src\sph\core\kernels.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowsProject_optimization_SPH.cpp" />
+    <ClCompile Include="src\sph\core\world.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject_optimization_SPH.rc" />
