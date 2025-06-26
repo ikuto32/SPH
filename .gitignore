@@ -129,3 +129,8 @@ dmypy.json
 .pyre/
 
 .vs/
+
+# Windows build artifacts
+x64/
+*.exe
+*.pdb
