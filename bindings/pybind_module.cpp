@@ -16,6 +16,12 @@ public:
         return py::array_t<float>({N, 2}, &pos[0][0]);
     }
 
+    py::array_t<float> get_velocities() const {
+        constexpr int N = sph::World::numParticle;
+        const float (*vel)[2] = world.getVelocities();
+        return py::array_t<float>({N, 2}, &vel[0][0]);
+    }
+
     float width() const { return world.getWorldWidth(); }
     float height() const { return world.getWorldHeight(); }
 
@@ -28,6 +34,7 @@ PYBIND11_MODULE(_sph, m) {
         .def(py::init<>())
         .def("step", &PyWorld::step, py::arg("dt"))
         .def("get_positions", &PyWorld::get_positions)
-        .def_property_readonly("width", &PyWorld::width)
-        .def_property_readonly("height", &PyWorld::height);
+        .def("get_velocities", &PyWorld::get_velocities)
+        .def("width", &PyWorld::width)
+        .def("height", &PyWorld::height);
 }
