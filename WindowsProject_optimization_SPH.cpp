@@ -379,9 +379,9 @@ public:
 
 	void updateColor()
 	{
-		float speeds[numParticle];
-		float minSpeed = 0.0;
-		float maxSpeed = 0.0;
+                float speeds[numParticle];
+                float minSpeed = FLT_MAX;
+                float maxSpeed = 0.0;
 		int color1[3];
 		color1[0] = 0;
 		color1[1] = 0;
@@ -394,15 +394,15 @@ public:
 		for (int i = 0; i < numParticle; i++)
 		{
 			float speed = std::sqrt(vel[i][0] * vel[i][0] + vel[i][1] * vel[i][1]);
-			if (minSpeed < speed)
-			{
-				minSpeed = speed;
-			}
+                        if (minSpeed > speed)
+                        {
+                                minSpeed = speed;
+                        }
 
-			if (maxSpeed > speed)
-			{
-				maxSpeed = speed;
-			}
+                        if (maxSpeed < speed)
+                        {
+                                maxSpeed = speed;
+                        }
 			speeds[i] = speed;
 		}
 
@@ -514,12 +514,12 @@ public:
 		return (pressureLeft + pressureRight) * 0.5;
 	}
 
-	float convertDensityToPressure(float density) const
-	{
-		float densityError = density - targetDensity;
-		float pressire = densityError * pressureMultiplier;
-		return pressire;
-	}
+        float convertDensityToPressure(float density) const
+        {
+                float densityError = density - targetDensity;
+                float pressure = densityError * pressureMultiplier;
+                return pressure;
+        }
 
 	void calcInteractionForce(float outInteractionForce[], int particleIndex) const
 	{
@@ -585,9 +585,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	// TODO: ここにコードを挿入してください。
-
-	// グローバル文字列を初期化する
+        // グローバル文字列を初期化する
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_WINDOWSPROJECTOPTIMIZATIONSPH, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);

@@ -15,6 +15,7 @@
 #include <tchar.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <cfloat>
 #include <random>
 #include <algorithm>
 #include <execution>
