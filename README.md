@@ -11,8 +11,14 @@ The resulting binaries are written to `x64/Debug` or `x64/Release`.
 
 ## Building with CMake
 
-The library and Python bindings can also be built using CMake.  On both
-Linux and Windows the typical workflow is:
+The library and Python bindings can also be built using CMake.  Before
+invoking CMake run the setup script in the repository root:
+
+```console
+./setup.sh
+```
+
+After the script completes you can use the usual workflow:
 
 ```console
 mkdir build
