@@ -47,3 +47,12 @@ After building the Visual Studio solution an executable named
 `WindowsProject_optimization_SPH.exe` will be produced inside the build
 output directory.  Launching this executable starts the example GUI
 showing the SPH simulation.
+
+## Running the Python demo
+
+After building the `_sph` Python extension a small demo can be launched
+using Pygame:
+
+```console
+python examples/run_gui.py
+```
