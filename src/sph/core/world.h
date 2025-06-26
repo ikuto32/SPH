@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "kernels.h"
+#include "kernels_cuda.h"
 
 namespace sph {
 
