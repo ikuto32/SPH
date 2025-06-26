@@ -185,12 +185,18 @@ void World::updateColor() {
 float World::calcDensity(int particleIndex) {
     float densityVal = 0.0f;
     auto otherIndexes = querysize[particleIndex];
-    for (int j : otherIndexes) {
+    std::vector<float> distances(otherIndexes.size());
+    for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
+        int j = otherIndexes[idx];
         float dx = predpos[j][0] - predpos[particleIndex][0];
         float dy = predpos[j][1] - predpos[particleIndex][1];
-        float dist = std::sqrt(dx*dx + dy*dy);
-        float influence = sph::calcSmoothingKernel(dist, smoothingRadius);
-        densityVal += mass[j] * influence;
+        distances[idx] = std::sqrt(dx*dx + dy*dy);
+    }
+    std::vector<float> influences(otherIndexes.size());
+    sph::calcSmoothingKernelCUDA(distances.data(), influences.data(), smoothingRadius, static_cast<int>(otherIndexes.size()));
+    for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
+        int j = otherIndexes[idx];
+        densityVal += mass[j] * influences[idx];
     }
     return densityVal;
 }
