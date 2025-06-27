@@ -134,3 +134,14 @@ dmypy.json
 x64/
 *.exe
 *.pdb
+
+# Visual Studio Code settings
+.vscode/
+
+# CMake build artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake
+
+# User-specific Visual Studio settings
+*.vcxproj.user
