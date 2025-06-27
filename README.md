@@ -53,6 +53,12 @@ After building the Visual Studio solution an executable named
 output directory.  Launching this executable starts the example GUI
 showing the SPH simulation.
 
+While running the GUI you can control the simulation using the keyboard:
+
+- Press **Space** to pause or resume.
+- When paused, press **S** to advance a single time step.
+- Press **R** to restart the simulation.
+
 ## Running the Python demo
 
 After building the `_sph` Python extension a small demo can be launched
