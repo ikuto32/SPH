@@ -19,3 +19,11 @@ def test_step_updates_positions():
     after = w.get_positions()
     assert after.shape == before.shape
     assert np.any(before != after)
+
+
+def test_interaction_force_methods():
+    w = _sph.PyWorld()
+    # set an interaction force and step the simulation; just ensure no errors
+    w.set_interaction_force(1.0, 1.0, 2.0, 5.0)
+    w.step(1.0 / 60.0)
+    w.delete_interaction_force()

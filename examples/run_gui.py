@@ -14,10 +14,23 @@ def main():
 
     dt = 1 / 60.0
     running = True
+    force_radius = 2.0
+    force_strength = 10.0
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+        
+        left, middle, right = pygame.mouse.get_pressed(num_buttons=3)
+        if left or right:
+            x, y = pygame.mouse.get_pos()
+            world_x = x / scale
+            world_y = y / scale
+            strength = force_strength if left else -force_strength
+            world.set_interaction_force(world_x, world_y, force_radius, strength)
+        else:
+            world.delete_interaction_force()
 
         world.step(dt)
         positions = world.get_positions()
@@ -27,7 +40,7 @@ def main():
             pygame.draw.circle(
                 screen,
                 (255, 255, 255),
-                (int(x * scale), int(height - y * scale)),
+                (int(x * scale), int(y * scale)),
                 2,
             )
         pygame.display.flip()

@@ -25,6 +25,12 @@ public:
     float width() const { return world.getWorldWidth(); }
     float height() const { return world.getWorldHeight(); }
 
+    void set_interaction_force(float x, float y, float radius, float strength) {
+        world.setInteractionForce(x, y, radius, strength);
+    }
+
+    void delete_interaction_force() { world.deleteInteractionForce(); }
+
 private:
     sph::World world;
 };
@@ -36,5 +42,13 @@ PYBIND11_MODULE(_sph, m) {
         .def("get_positions", &PyWorld::get_positions)
         .def("get_velocities", &PyWorld::get_velocities)
         .def("width", &PyWorld::width)
-        .def("height", &PyWorld::height);
+        .def("height", &PyWorld::height)
+        .def(
+            "set_interaction_force",
+            &PyWorld::set_interaction_force,
+            py::arg("x"),
+            py::arg("y"),
+            py::arg("radius"),
+            py::arg("strength"))
+        .def("delete_interaction_force", &PyWorld::delete_interaction_force);
 }
