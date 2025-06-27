@@ -2,33 +2,38 @@
 
 This repository contains a simple Smoothed Particle Hydrodynamics (SPH) simulation.
 
-## Building the library (Visual Studio)
+## Build instructions
 
-The original project is distributed as a Visual Studio solution.  Open
-`WindowsProject_optimization_SPH.sln` with Visual Studio 2022 (or newer)
-and build either the `Debug` or `Release` configuration for `x64`.
-The resulting binaries are written to `x64/Debug` or `x64/Release`.
+### Visual Studio
 
-## Building with CMake
+1. Open `WindowsProject_optimization_SPH.sln` with Visual Studio 2022 (or
+   newer).
+2. Select the `x64` configuration and build either `Debug` or `Release`.
+3. Binaries will be placed in `x64/Debug` or `x64/Release`.
 
-The library and Python bindings can also be built using CMake.  Before
-invoking CMake run the setup script in the repository root:
+### CMake
 
-```console
-./setup.sh
-```
+The library and Python bindings can also be built on platforms that have
+CMake available.
 
-After the script completes you can use the usual workflow:
+1. Execute the setup script to install dependencies and perform an initial
+   build:
 
-```console
-mkdir build
-cd build
-cmake -DUSE_CUDA=OFF ..   # set to ON when the CUDA toolkit is available
-cmake --build . --target _sph
-```
+   ```console
+   ./setup.sh
+   ```
 
-This will produce a Python extension named `_sph` inside the build
-directory.
+2. To run CMake manually, use the following commands:
+
+   ```console
+   mkdir build
+   cd build
+   cmake -DUSE_CUDA=OFF ..   # set to ON when the CUDA toolkit is available
+   cmake --build . --target _sph
+   ```
+
+   The resulting `_sph` Python extension is created inside the `build`
+   directory.
 
 ## Using the Python module
 
