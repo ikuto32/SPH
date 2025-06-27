@@ -2,6 +2,9 @@
 #define SPH_CORE_KERNELS_H
 
 #include <cmath>
+#ifndef M_PI              // まだ無ければ自前で定義
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace sph {
 
