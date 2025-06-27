@@ -28,7 +28,7 @@ private:
 
 public:
     GridMap(float width, float height, float radius);
-    std::vector<int> getChunk(int chunkX, int chunkY);
+    const std::vector<int>& getChunk(int chunkX, int chunkY) const;
     void registerTarget(int target, float x, float y);
     void unregisterAll();
     std::vector<int> findNeighborhood(float x, float y, float radius);

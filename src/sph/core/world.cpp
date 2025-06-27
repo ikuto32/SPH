@@ -16,7 +16,7 @@ GridMap::GridMap(float width, float height, float radius)
     chunks.assign(numChunk, std::vector<int>());
 }
 
-std::vector<int> GridMap::getChunk(int chunkX, int chunkY) {
+const std::vector<int>& GridMap::getChunk(int chunkX, int chunkY) const {
     return chunks[chunkY * numChunkWidth + chunkX];
 }
 
@@ -48,7 +48,7 @@ std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
         for (int y1 = minChunkY; y1 <= maxChunkY; ++y1) {
             if (x1 < 0 || x1 >= numChunkWidth) continue;
             if (y1 < 0 || y1 >= numChunkHeight) continue;
-            auto chunk = getChunk(x1, y1);
+            const auto& chunk = getChunk(x1, y1);
             out.insert(out.end(), chunk.begin(), chunk.end());
         }
     }
