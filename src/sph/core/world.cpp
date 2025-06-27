@@ -55,7 +55,18 @@ std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
     return out;
 }
 
-World::World() : forcePoint{{0,0},0,0}, gridmap(worldSize[0], worldSize[1], smoothingRadius) {
+World::World(const WorldConfig& config)
+    : gravity(config.gravity),
+      worldSize{config.worldWidth, config.worldHeight},
+      collisionDamping(config.collisionDamping),
+      smoothingRadius(config.smoothingRadius),
+      targetDensity(config.targetDensity),
+      pressureMultiplier(config.pressureMultiplier),
+      delta(config.delta),
+      drag(config.drag),
+      forcePoint{{0,0},0,0},
+      gridmap(worldSize[0], worldSize[1], smoothingRadius)
+{
     std::memset(pos, 0, sizeof(pos));
     std::memset(predpos, 0, sizeof(predpos));
     std::memset(vel, 0, sizeof(vel));

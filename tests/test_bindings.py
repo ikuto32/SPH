@@ -27,3 +27,19 @@ def test_interaction_force_methods():
     w.set_interaction_force(1.0, 1.0, 2.0, 5.0)
     w.step(1.0 / 60.0)
     w.delete_interaction_force()
+
+
+def test_custom_parameters_affect_world_size():
+    w = _sph.PyWorld(width=5.0, height=3.0)
+    assert w.width() == 5.0
+    assert w.height() == 3.0
+
+
+def test_custom_physics_parameters():
+    w = _sph.PyWorld(gravity=20.0, smoothing_radius=1.2, drag=0.5)
+    assert np.isclose(w.gravity(), 20.0)
+    assert np.isclose(w.smoothing_radius(), 1.2)
+    assert np.isclose(w.drag(), 0.5)
+    # ensure stepping does not raise
+    w.step(1.0 / 60.0)
+
