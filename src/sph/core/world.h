@@ -40,20 +40,33 @@ struct ForcePoint {
     float strength;
 };
 
+struct WorldConfig {
+    float worldWidth = 20.0f;
+    float worldHeight = 10.0f;
+    float smoothingRadius = 0.8f;
+    float targetDensity = 32.0f;
+    float pressureMultiplier = 100.0f;
+    float delta = 0.0f;
+    float drag = 0.9999f;
+    float gravity = 9.8f;
+    float collisionDamping = 1.0f;
+};
+
 class World {
 public:
     static const int numParticle = 1000;
 
 private:
     const int particleRadius = 5;
-    const float gravity = 9.8F;
-    const float worldSize[2] = {20, 10};
-    const float collisionDamping = 1.0F;
-    const float smoothingRadius = 0.8F;
-    const float targetDensity = 32.0F;
-    const float pressureMultiplier = 100.0F;
-    const float delta = 0.0F;
-    const float drag = 0.9999F;
+
+    float gravity = 9.8f;
+    float worldSize[2] = {20.0f, 10.0f};
+    float collisionDamping = 1.0f;
+    float smoothingRadius = 0.8f;
+    float targetDensity = 32.0f;
+    float pressureMultiplier = 100.0f;
+    float delta = 0.0f;
+    float drag = 0.9999f;
 
     float pos[numParticle][2];
     float predpos[numParticle][2];
@@ -70,13 +83,20 @@ private:
     GridMap gridmap;
 
 public:
-    World();
+    World(const WorldConfig& config = WorldConfig());
 
     void setInteractionForce(float posX, float posY, float radius, float strength);
     void deleteInteractionForce();
 
     float getWorldWidth() const;
     float getWorldHeight() const;
+    float getSmoothingRadius() const { return smoothingRadius; }
+    float getGravity() const { return gravity; }
+    float getDrag() const { return drag; }
+    float getTargetDensity() const { return targetDensity; }
+    float getPressureMultiplier() const { return pressureMultiplier; }
+    float getDelta() const { return delta; }
+    float getCollisionDamping() const { return collisionDamping; }
 
     void update(float deltaTime);
     const float (*getPositions() const)[2] { return pos; }
