@@ -15,7 +15,17 @@ int main() {
     for (int i = 0; i < n; ++i) {
         cpu[i] = sph::calcSmoothingKernel(distances[i], radius);
     }
-    sph::calcSmoothingKernelCUDA(distances.data(), gpu.data(), radius, n);
+#ifdef USE_CUDA
+    float* d_in = nullptr;
+    float* d_out = nullptr;
+    CUDA_CHECK(cudaMalloc(&d_in, n * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_out, n * sizeof(float)));
+    sph::calcSmoothingKernelCUDA(distances.data(), gpu.data(), radius, n, d_in, d_out);
+    CUDA_CHECK(cudaFree(d_in));
+    CUDA_CHECK(cudaFree(d_out));
+#else
+    sph::calcSmoothingKernelCUDA(distances.data(), gpu.data(), radius, n, nullptr, nullptr);
+#endif
     for (int i = 0; i < n; ++i) {
         assert(std::abs(cpu[i] - gpu[i]) < 1e-5f);
     }
