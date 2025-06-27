@@ -16,6 +16,8 @@ def main():
 
     dt = 1 / 60.0
     running = True
+    paused = False
+    step_once = False
     force_radius = 2.0
     force_strength = 10.0
 
@@ -24,6 +26,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    paused = not paused
+                elif event.key == pygame.K_s:
+                    step_once = True
+                elif event.key == pygame.K_r:
+                    world = PyWorld()
+                    paused = False
+                    step_once = False
         
         left, middle, right = pygame.mouse.get_pressed(num_buttons=3)
         if left or right:
@@ -35,7 +46,9 @@ def main():
         else:
             world.delete_interaction_force()
 
-        world.step(dt)
+        if not paused or step_once:
+            world.step(dt)
+            step_once = False
         positions = world.get_positions()
         proc_time = (time.perf_counter() - start_time) * 1000.0
 
@@ -47,7 +60,10 @@ def main():
                 (int(x * scale), int(y * scale)),
                 2,
             )
-        text = f"FPS: {clock.get_fps():.2f} | Time: {proc_time:.2f} ms"
+        if paused:
+            text = f"Paused | Time: {proc_time:.2f} ms"
+        else:
+            text = f"FPS: {clock.get_fps():.2f} | Time: {proc_time:.2f} ms"
         img = font.render(text, True, (255, 0, 0))
         screen.blit(img, (10, 10))
         pygame.display.flip()
