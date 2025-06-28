@@ -81,9 +81,14 @@ private:
 
     ForcePoint forcePoint;
     GridMap gridmap;
+#ifdef USE_CUDA
+    float* d_dist_buffer = nullptr;
+    float* d_out_buffer = nullptr;
+#endif
 
 public:
     World(const WorldConfig& config = WorldConfig());
+    ~World();
 
     void setInteractionForce(float posX, float posY, float radius, float strength);
     void deleteInteractionForce();

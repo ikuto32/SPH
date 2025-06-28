@@ -86,6 +86,18 @@ World::World(const WorldConfig& config)
     std::memset(color, 255, sizeof(color));
     iterator.resize(numParticle);
     for (int i = 0; i < numParticle; ++i) iterator[i] = i;
+#ifdef USE_CUDA
+    CUDA_CHECK(cudaMalloc(&d_dist_buffer, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_out_buffer, numParticle * sizeof(float)));
+#endif
+}
+
+World::~World()
+{
+#ifdef USE_CUDA
+    CUDA_CHECK(cudaFree(d_dist_buffer));
+    CUDA_CHECK(cudaFree(d_out_buffer));
+#endif
 }
 
 void World::setInteractionForce(float posX, float posY, float radius, float strength) {
@@ -204,7 +216,21 @@ float World::calcDensity(int particleIndex) {
         distances[idx] = std::sqrt(dx*dx + dy*dy);
     }
     std::vector<float> influences(otherIndexes.size());
-    sph::calcSmoothingKernelCUDA(distances.data(), influences.data(), smoothingRadius, static_cast<int>(otherIndexes.size()));
+#ifdef USE_CUDA
+    sph::calcSmoothingKernelCUDA(distances.data(),
+                                influences.data(),
+                                smoothingRadius,
+                                static_cast<int>(otherIndexes.size()),
+                                d_dist_buffer,
+                                d_out_buffer);
+#else
+    sph::calcSmoothingKernelCUDA(distances.data(),
+                                influences.data(),
+                                smoothingRadius,
+                                static_cast<int>(otherIndexes.size()),
+                                nullptr,
+                                nullptr);
+#endif
     for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
         int j = otherIndexes[idx];
         densityVal += mass[j] * influences[idx];
