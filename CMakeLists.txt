@@ -31,7 +31,10 @@ set(SPH_SOURCES
 )
 
 if(USE_CUDA)
-    list(APPEND SPH_SOURCES src/sph/core/kernels_cuda.cu)
+    list(APPEND SPH_SOURCES
+        src/sph/core/kernels_cuda.cu
+        src/sph/core/world_cuda.cu)
+    set_source_files_properties(src/sph/core/world_cuda.cu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 endif()
 
 add_library(sph STATIC ${SPH_SOURCES})           # ← ここ一回でOK
@@ -43,6 +46,7 @@ target_include_directories(sph PUBLIC
 
 target_link_libraries(sph PUBLIC
     TBB::tbb
+    $<$<BOOL:${USE_CUDA}>:CUDA::cudart>
 )
 
 add_subdirectory(bindings)

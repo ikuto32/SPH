@@ -15,6 +15,12 @@
 namespace sph {
 
 float floatRand();
+#ifdef USE_CUDA
+void predictedPosCUDA(float* d_pos, float* d_vel, float* d_predpos,
+                      float gravity, float dt, int n);
+void updatePositionCUDA(float* d_pos, float* d_vel, float* d_pressure,
+                        float* d_interaction, float drag, float dt, int n);
+#endif
 
 class GridMap {
 private:
@@ -84,6 +90,12 @@ private:
 #ifdef USE_CUDA
     float* d_dist_buffer = nullptr;
     float* d_out_buffer = nullptr;
+    float* d_pos = nullptr;
+    float* d_predpos = nullptr;
+    float* d_vel = nullptr;
+    float* d_density = nullptr;
+    float* d_pressure = nullptr;
+    float* d_interaction = nullptr;
 #endif
 
 public:
