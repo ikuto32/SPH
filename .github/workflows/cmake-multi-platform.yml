@@ -55,14 +55,16 @@ jobs:
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install CUDA Toolkit
-      uses: Jimver/cuda-toolkit@v0
+
+      uses: Jimver/cuda-toolkit@v0.2.2
       with:
         cuda: "12.2.2"
 
     - name: Install Python dependencies
       run: python -m pip install pybind11 numpy
 
-    - name: Configure CMake‘
+    - name: Configure CMake
+
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
