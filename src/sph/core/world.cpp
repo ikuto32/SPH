@@ -97,6 +97,8 @@ World::~World()
 #ifdef USE_CUDA
     CUDA_CHECK(cudaFree(d_dist_buffer));
     CUDA_CHECK(cudaFree(d_out_buffer));
+    d_dist_buffer = nullptr;
+    d_out_buffer = nullptr;
 #endif
 }
 
