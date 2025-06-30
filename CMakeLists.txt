@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_CUDA "Build with CUDA support" ON)
+option(SPH_ENABLE_HASH2D "Enable 2D hash grid" ON)
 
 if(USE_CUDA)
     include(CheckLanguage)
@@ -22,6 +23,10 @@ if(USE_CUDA)
     endif()
 endif()
 
+if(SPH_ENABLE_HASH2D)
+    add_compile_definitions(SPH_ENABLE_HASH2D)
+endif()
+
 find_package(pybind11 CONFIG REQUIRED)
 find_package(TBB       CONFIG REQUIRED)
 
@@ -35,6 +40,13 @@ if(USE_CUDA)
         src/sph/core/kernels_cuda.cu
         src/sph/core/world_cuda.cu)
     set_source_files_properties(src/sph/core/world_cuda.cu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    if(SPH_ENABLE_HASH2D)
+        list(APPEND SPH_SOURCES
+            src/sph/gpu/hash_grid_2d.cu
+            src/sph/gpu/neighbor_search_2d.cu)
+        set_source_files_properties(src/sph/gpu/hash_grid_2d.cu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+        set_source_files_properties(src/sph/gpu/neighbor_search_2d.cu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    endif()
 endif()
 
 add_library(sph STATIC ${SPH_SOURCES})           # ← ここ一回でOK

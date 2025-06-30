@@ -1,6 +1,11 @@
 #include "world.h"
 #include <chrono>
 #include <random>
+#ifdef USE_CUDA
+#ifdef SPH_ENABLE_HASH2D
+#include "sph/gpu/hash_grid_2d.hpp"
+#endif
+#endif
 
 namespace sph {
 
@@ -171,6 +176,18 @@ float World::getWorldHeight() const { return worldSize[1]; }
 
 void World::update(float deltaTime) {
     predictedPos(deltaTime);
+#ifdef USE_CUDA
+#ifdef SPH_ENABLE_HASH2D
+    static HashGrid2D grid(worldSize[0], worldSize[1], smoothingRadius);
+    static int* d_neighborCount = nullptr;
+    if (!d_neighborCount) {
+        CUDA_CHECK(cudaMalloc(&d_neighborCount, numParticle * sizeof(int)));
+    }
+    grid.build(d_posX, d_posY, activeParticles);
+    launchNeighbourSearch(d_posX, d_posY, grid, smoothingRadius,
+                          activeParticles, d_neighborCount);
+#endif
+#endif
     gridmap.unregisterAll();
 
     std::vector<int> v = iterator;
