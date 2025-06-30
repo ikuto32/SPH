@@ -1,4 +1,13 @@
-import numpy as np
+import pytest
+
+try:
+    import numpy as np
+except ImportError as exc:  # pragma: no cover - environment dependency
+    pytest.skip(
+        f"NumPy not available: {exc}. Skipping binding tests.",
+        allow_module_level=True,
+    )
+
 import _sph
 
 
