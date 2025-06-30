@@ -49,5 +49,6 @@ target_link_libraries(sph PUBLIC
     $<$<BOOL:${USE_CUDA}>:CUDA::cudart>
 )
 
+enable_testing()
 add_subdirectory(bindings)
 add_subdirectory(tests)

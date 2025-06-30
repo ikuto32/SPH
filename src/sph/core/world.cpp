@@ -1,4 +1,5 @@
 #include "world.h"
+#include <chrono>
 
 namespace sph {
 
@@ -65,7 +66,8 @@ World::World(const WorldConfig& config)
       delta(config.delta),
       drag(config.drag),
       forcePoint{{0,0},0,0},
-      gridmap(worldSize[0], worldSize[1], smoothingRadius)
+      gridmap(worldSize[0], worldSize[1], smoothingRadius),
+      activeParticles(numParticle)
 {
     std::memset(pos, 0, sizeof(pos));
     std::memset(predpos, 0, sizeof(predpos));
@@ -84,8 +86,8 @@ World::World(const WorldConfig& config)
     }
 
     std::memset(color, 255, sizeof(color));
-    iterator.resize(numParticle);
-    for (int i = 0; i < numParticle; ++i) iterator[i] = i;
+    iterator.resize(activeParticles);
+    for (int i = 0; i < activeParticles; ++i) iterator[i] = i;
 #ifdef USE_CUDA
     CUDA_CHECK(cudaMalloc(&d_dist_buffer, numParticle * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_out_buffer, numParticle * sizeof(float)));
@@ -124,6 +126,12 @@ World::~World()
 #endif
 }
 
+void World::setActiveParticleCount(int n) {
+    activeParticles = std::clamp(n, 1, numParticle);
+    iterator.resize(activeParticles);
+    for (int i = 0; i < activeParticles; ++i) iterator[i] = i;
+}
+
 void World::setInteractionForce(float posX, float posY, float radius, float strength) {
     forcePoint = {{posX, posY}, radius, strength};
 }
@@ -144,7 +152,7 @@ void World::update(float deltaTime) {
         gridmap.registerTarget(idx, pos[idx][0], pos[idx][1]);
     });
 
-    querysize.resize(numParticle);
+    querysize.resize(activeParticles);
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
         querysize[idx] = gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius);
     });
@@ -158,15 +166,73 @@ void World::update(float deltaTime) {
     updateColor();
 }
 
-void World::predictedPos(float deltaTime) {
+void World::updateWithStats(float deltaTime, ProfileInfo& info) {
+    auto t0 = std::chrono::high_resolution_clock::now();
+    predictedPos(deltaTime, &info);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    info.predictedPosMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    gridmap.unregisterAll();
+    std::vector<int> v = iterator;
+    std::for_each(std::execution::seq, v.begin(), v.end(), [&](int idx){
+        gridmap.registerTarget(idx, pos[idx][0], pos[idx][1]);
+    });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.gridRegisterMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    querysize.resize(activeParticles);
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
+        querysize[idx] = gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius);
+    });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.queryMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateDensity(idx); });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.densityMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updatePressureForce(idx); });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.pressureMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateInteractionForce(idx); });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.interactionMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    updatePosition(deltaTime, &info);
+    t1 = std::chrono::high_resolution_clock::now();
+    info.updatePosMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ fixPositionFromWorldSize(idx); });
+    t1 = std::chrono::high_resolution_clock::now();
+    info.fixPosMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    t0 = std::chrono::high_resolution_clock::now();
+    updateColor();
+    t1 = std::chrono::high_resolution_clock::now();
+    info.colorMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
+}
+
+void World::predictedPos(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
     CUDA_CHECK(cudaMemcpy(d_pos, pos, sizeof(pos), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += sizeof(pos);
     CUDA_CHECK(cudaMemcpy(d_vel, vel, sizeof(vel), cudaMemcpyHostToDevice));
-    predictedPosCUDA(d_pos, d_vel, d_predpos, gravity, deltaTime, numParticle);
+    if (info) info->memTransferBytes += sizeof(vel);
+    predictedPosCUDA(d_pos, d_vel, d_predpos, gravity, deltaTime, activeParticles);
     CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += sizeof(vel);
     CUDA_CHECK(cudaMemcpy(predpos, d_predpos, sizeof(predpos), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += sizeof(predpos);
 #else
-    for (int i = 0; i < numParticle; ++i) {
+    for (int i = 0; i < activeParticles; ++i) {
         vel[i][0] += 0.0f;
         vel[i][1] += mass[i] * gravity * deltaTime;
         predpos[i][0] = pos[i][0] + vel[i][0] * 1.0f / 120.0f;
@@ -191,17 +257,23 @@ void World::updateInteractionForce(int i) {
     interactionForce[i][1] = outForce[1];
 }
 
-void World::updatePosition(float deltaTime) {
+void World::updatePosition(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
     CUDA_CHECK(cudaMemcpy(d_pos, pos, sizeof(pos), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += sizeof(pos);
     CUDA_CHECK(cudaMemcpy(d_vel, vel, sizeof(vel), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += sizeof(vel);
     CUDA_CHECK(cudaMemcpy(d_pressure, pressureAccelerations, sizeof(pressureAccelerations), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += sizeof(pressureAccelerations);
     CUDA_CHECK(cudaMemcpy(d_interaction, interactionForce, sizeof(interactionForce), cudaMemcpyHostToDevice));
-    updatePositionCUDA(d_pos, d_vel, d_pressure, d_interaction, drag, deltaTime, numParticle);
+    if (info) info->memTransferBytes += sizeof(interactionForce);
+    updatePositionCUDA(d_pos, d_vel, d_pressure, d_interaction, drag, deltaTime, activeParticles);
     CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += sizeof(pos);
     CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += sizeof(vel);
 #else
-    for (int i = 0; i < numParticle; ++i) {
+    for (int i = 0; i < activeParticles; ++i) {
         vel[i][0] += (pressureAccelerations[i][0] + interactionForce[i][0]) * deltaTime;
         vel[i][1] += (pressureAccelerations[i][1] + interactionForce[i][1]) * deltaTime;
         pos[i][0] += vel[i][0] * deltaTime;
@@ -226,18 +298,18 @@ void World::fixPositionFromWorldSize(int i) {
 }
 
 void World::updateColor() {
-    float speeds[numParticle];
+    std::vector<float> speeds(activeParticles);
     float minSpeed = FLT_MAX;
     float maxSpeed = 0.0f;
     int color1[3] = {0,0,255};
     int color2[3] = {255,0,0};
-    for (int i = 0; i < numParticle; ++i) {
+    for (int i = 0; i < activeParticles; ++i) {
         float speed = std::sqrt(vel[i][0]*vel[i][0] + vel[i][1]*vel[i][1]);
         if (minSpeed > speed) minSpeed = speed;
         if (maxSpeed < speed) maxSpeed = speed;
         speeds[i] = speed;
     }
-    for (int i = 0; i < numParticle; ++i) {
+    for (int i = 0; i < activeParticles; ++i) {
         float normSpeed = (speeds[i] - minSpeed) / (maxSpeed - minSpeed);
         normSpeed = std::clamp(normSpeed, 0.0f, 1.0f);
         uint8_t byteVel = static_cast<uint8_t>(normSpeed * 255.0f);
