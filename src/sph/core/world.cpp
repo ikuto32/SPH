@@ -74,38 +74,54 @@ World::World(const WorldConfig& config)
       gridmap(worldSize[0], worldSize[1], smoothingRadius),
       activeParticles(numParticle)
 {
-    std::memset(pos, 0, sizeof(pos));
-    std::memset(predpos, 0, sizeof(predpos));
-    std::memset(vel, 0, sizeof(vel));
-    std::memset(density, 0, sizeof(density));
-    std::memset(pressureAccelerations, 0, sizeof(pressureAccelerations));
-    std::memset(interactionForce, 0, sizeof(interactionForce));
-    for (int i = 0; i < numParticle; ++i) mass[i] = 1.0f;
+    posX.assign(numParticle, 0.0f);
+    posY.assign(numParticle, 0.0f);
+    predPosX.assign(numParticle, 0.0f);
+    predPosY.assign(numParticle, 0.0f);
+    velX.assign(numParticle, 0.0f);
+    velY.assign(numParticle, 0.0f);
+    density.assign(numParticle, 0.0f);
+    pressureX.assign(numParticle, 0.0f);
+    pressureY.assign(numParticle, 0.0f);
+    interactionX.assign(numParticle, 0.0f);
+    interactionY.assign(numParticle, 0.0f);
+    mass.assign(numParticle, 1.0f);
 
     for (int i = 0; i < numParticle; ++i) {
         int a = static_cast<int>(std::sqrt(numParticle));
         int row = i / a;
         int col = i % a;
-        pos[i][0] = (col / static_cast<float>(a)) * worldSize[0];
-        pos[i][1] = (row / static_cast<float>(a)) * worldSize[1];
+        posX[i] = (col / static_cast<float>(a)) * worldSize[0];
+        posY[i] = (row / static_cast<float>(a)) * worldSize[1];
     }
 
-    std::memset(color, 255, sizeof(color));
+    colorR.assign(numParticle, 255);
+    colorG.assign(numParticle, 255);
+    colorB.assign(numParticle, 255);
     iterator.resize(activeParticles);
     for (int i = 0; i < activeParticles; ++i) iterator[i] = i;
 #ifdef USE_CUDA
     CUDA_CHECK(cudaMalloc(&d_dist_buffer, numParticle * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_out_buffer, numParticle * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_pos, numParticle * 2 * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_predpos, numParticle * 2 * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_vel, numParticle * 2 * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_posX, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_posY, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_predPosX, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_predPosY, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_velX, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_velY, numParticle * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_density, numParticle * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_pressure, numParticle * 2 * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_interaction, numParticle * 2 * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(d_pos, pos, sizeof(pos), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_vel, vel, sizeof(vel), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_pressure, pressureAccelerations, sizeof(pressureAccelerations), cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(d_interaction, interactionForce, sizeof(interactionForce), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMalloc(&d_pressureX, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_pressureY, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_interactionX, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_interactionY, numParticle * sizeof(float)));
+    CUDA_CHECK(cudaMemcpy(d_posX, posX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_posY, posY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_velX, velX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_velY, velY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_pressureX, pressureX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_pressureY, pressureY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_interactionX, interactionX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_interactionY, interactionY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
 #endif
 }
 
@@ -114,20 +130,25 @@ World::~World()
 #ifdef USE_CUDA
     CUDA_CHECK(cudaFree(d_dist_buffer));
     CUDA_CHECK(cudaFree(d_out_buffer));
-    CUDA_CHECK(cudaFree(d_pos));
-    CUDA_CHECK(cudaFree(d_predpos));
-    CUDA_CHECK(cudaFree(d_vel));
+    CUDA_CHECK(cudaFree(d_posX));
+    CUDA_CHECK(cudaFree(d_posY));
+    CUDA_CHECK(cudaFree(d_predPosX));
+    CUDA_CHECK(cudaFree(d_predPosY));
+    CUDA_CHECK(cudaFree(d_velX));
+    CUDA_CHECK(cudaFree(d_velY));
     CUDA_CHECK(cudaFree(d_density));
-    CUDA_CHECK(cudaFree(d_pressure));
-    CUDA_CHECK(cudaFree(d_interaction));
+    CUDA_CHECK(cudaFree(d_pressureX));
+    CUDA_CHECK(cudaFree(d_pressureY));
+    CUDA_CHECK(cudaFree(d_interactionX));
+    CUDA_CHECK(cudaFree(d_interactionY));
     d_dist_buffer = nullptr;
     d_out_buffer = nullptr;
-    d_pos = nullptr;
-    d_predpos = nullptr;
-    d_vel = nullptr;
+    d_posX = d_posY = nullptr;
+    d_predPosX = d_predPosY = nullptr;
+    d_velX = d_velY = nullptr;
     d_density = nullptr;
-    d_pressure = nullptr;
-    d_interaction = nullptr;
+    d_pressureX = d_pressureY = nullptr;
+    d_interactionX = d_interactionY = nullptr;
 #endif
 }
 
@@ -154,12 +175,12 @@ void World::update(float deltaTime) {
 
     std::vector<int> v = iterator;
     std::for_each(std::execution::seq, v.begin(), v.end(), [&](int idx){
-        gridmap.registerTarget(idx, pos[idx][0], pos[idx][1]);
+        gridmap.registerTarget(idx, posX[idx], posY[idx]);
     });
 
     querysize.resize(activeParticles);
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
-        gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius, querysize[idx]);
+        gridmap.findNeighborhood(posX[idx], posY[idx], smoothingRadius, querysize[idx]);
     });
 
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateDensity(idx); });
@@ -168,10 +189,12 @@ void World::update(float deltaTime) {
 
     updatePosition(deltaTime);
 #ifdef USE_CUDA
-    fixPositionCUDA(d_pos, d_vel, worldSize[0], worldSize[1],
+    fixPositionCUDA(d_posX, d_posY, d_velX, d_velY, worldSize[0], worldSize[1],
                    collisionDamping, activeParticles);
-    CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(posX.data(), d_posX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(posY.data(), d_posY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(velX.data(), d_velX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(velY.data(), d_velY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
 #else
     std::for_each(std::execution::par_unseq, v.begin(), v.end(),
                   [&](int idx) { fixPositionFromWorldSize(idx); });
@@ -189,7 +212,7 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
     gridmap.unregisterAll();
     std::vector<int> v = iterator;
     std::for_each(std::execution::seq, v.begin(), v.end(), [&](int idx){
-        gridmap.registerTarget(idx, pos[idx][0], pos[idx][1]);
+        gridmap.registerTarget(idx, posX[idx], posY[idx]);
     });
     t1 = std::chrono::high_resolution_clock::now();
     info.gridRegisterMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
@@ -197,7 +220,7 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
     t0 = std::chrono::high_resolution_clock::now();
     querysize.resize(activeParticles);
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
-        gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius, querysize[idx]);
+        gridmap.findNeighborhood(posX[idx], posY[idx], smoothingRadius, querysize[idx]);
     });
     t1 = std::chrono::high_resolution_clock::now();
     info.queryMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
@@ -224,11 +247,13 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
 
     t0 = std::chrono::high_resolution_clock::now();
 #ifdef USE_CUDA
-    fixPositionCUDA(d_pos, d_vel, worldSize[0], worldSize[1],
+    fixPositionCUDA(d_posX, d_posY, d_velX, d_velY, worldSize[0], worldSize[1],
                    collisionDamping, activeParticles);
-    CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
-    info.memTransferBytes += sizeof(pos) + sizeof(vel);
+    CUDA_CHECK(cudaMemcpy(posX.data(), d_posX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(posY.data(), d_posY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(velX.data(), d_velX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(velY.data(), d_velY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    info.memTransferBytes += 4 * numParticle * sizeof(float);
 #else
     std::for_each(std::execution::par_unseq, v.begin(), v.end(),
                   [&](int idx){ fixPositionFromWorldSize(idx); });
@@ -244,19 +269,21 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
 
 void World::predictedPos(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
-    predictedPosCUDA(d_pos, d_vel, d_predpos, gravity, deltaTime,
+    predictedPosCUDA(d_posX, d_posY, d_velX, d_velY,
+                     d_predPosX, d_predPosY, gravity, deltaTime,
                      activeParticles);
-    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
-    if (info) info->memTransferBytes += sizeof(vel);
-    CUDA_CHECK(cudaMemcpy(predpos, d_predpos, sizeof(predpos),
-                          cudaMemcpyDeviceToHost));
-    if (info) info->memTransferBytes += sizeof(predpos);
+    CUDA_CHECK(cudaMemcpy(velX.data(), d_velX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(velY.data(), d_velY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += 2 * numParticle * sizeof(float);
+    CUDA_CHECK(cudaMemcpy(predPosX.data(), d_predPosX, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(predPosY.data(), d_predPosY, numParticle * sizeof(float), cudaMemcpyDeviceToHost));
+    if (info) info->memTransferBytes += 2 * numParticle * sizeof(float);
 #else
     for (int i = 0; i < activeParticles; ++i) {
-        vel[i][0] += 0.0f;
-        vel[i][1] += mass[i] * gravity * deltaTime;
-        predpos[i][0] = pos[i][0] + vel[i][0] * 1.0f / 120.0f;
-        predpos[i][1] = pos[i][1] + vel[i][1] * 1.0f / 120.0f;
+        velX[i] += 0.0f;
+        velY[i] += mass[i] * gravity * deltaTime;
+        predPosX[i] = posX[i] + velX[i] * 1.0f / 120.0f;
+        predPosY[i] = posY[i] + velY[i] * 1.0f / 120.0f;
     }
 #endif
 }
@@ -266,52 +293,52 @@ void World::updateDensity(int particleIndex) { density[particleIndex] = calcDens
 void World::updatePressureForce(int particleIndex) {
     float pressureForce[] = {0,0};
     calcPressureForce(pressureForce, particleIndex);
-    pressureAccelerations[particleIndex][0] = pressureForce[0] / (density[particleIndex] + delta);
-    pressureAccelerations[particleIndex][1] = pressureForce[1] / (density[particleIndex] + delta);
+    pressureX[particleIndex] = pressureForce[0] / (density[particleIndex] + delta);
+    pressureY[particleIndex] = pressureForce[1] / (density[particleIndex] + delta);
 }
 
 void World::updateInteractionForce(int i) {
     float outForce[] = {0,0};
     calcInteractionForce(outForce, i);
-    interactionForce[i][0] = outForce[0];
-    interactionForce[i][1] = outForce[1];
+    interactionX[i] = outForce[0];
+    interactionY[i] = outForce[1];
 }
 
 void World::updatePosition(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
-    CUDA_CHECK(cudaMemcpy(d_pressure, pressureAccelerations,
-                          sizeof(pressureAccelerations),
-                          cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(pressureAccelerations);
-    CUDA_CHECK(cudaMemcpy(d_interaction, interactionForce,
-                          sizeof(interactionForce),
-                          cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(interactionForce);
-    updatePositionCUDA(d_pos, d_vel, d_pressure, d_interaction, drag,
-                       deltaTime, activeParticles);
+    CUDA_CHECK(cudaMemcpy(d_pressureX, pressureX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_pressureY, pressureY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += 2 * numParticle * sizeof(float);
+    CUDA_CHECK(cudaMemcpy(d_interactionX, interactionX.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_interactionY, interactionY.data(), numParticle * sizeof(float), cudaMemcpyHostToDevice));
+    if (info) info->memTransferBytes += 2 * numParticle * sizeof(float);
+    updatePositionCUDA(d_posX, d_posY, d_velX, d_velY,
+                       d_pressureX, d_pressureY,
+                       d_interactionX, d_interactionY,
+                       drag, deltaTime, activeParticles);
 #else
     for (int i = 0; i < activeParticles; ++i) {
-        vel[i][0] += (pressureAccelerations[i][0] + interactionForce[i][0]) * deltaTime;
-        vel[i][1] += (pressureAccelerations[i][1] + interactionForce[i][1]) * deltaTime;
-        pos[i][0] += vel[i][0] * deltaTime;
-        pos[i][1] += vel[i][1] * deltaTime;
-        vel[i][0] *= drag;
-        vel[i][1] *= drag;
+        velX[i] += (pressureX[i] + interactionX[i]) * deltaTime;
+        velY[i] += (pressureY[i] + interactionY[i]) * deltaTime;
+        posX[i] += velX[i] * deltaTime;
+        posY[i] += velY[i] * deltaTime;
+        velX[i] *= drag;
+        velY[i] *= drag;
     }
 #endif
 }
 
 void World::fixPositionFromWorldSize(int i) {
-    float x = pos[i][0];
-    float y = pos[i][1];
-    float velX = vel[i][0];
-    float velY = vel[i][1];
+    float x = posX[i];
+    float y = posY[i];
+    float velXv = velX[i];
+    float velYv = velY[i];
     int w = static_cast<int>(worldSize[0]);
     int h = static_cast<int>(worldSize[1]);
-    if (x < 0) { pos[i][0] = 0; vel[i][0] = -velX * collisionDamping; }
-    if (w < x) { pos[i][0] = w; vel[i][0] = -velX * collisionDamping; }
-    if (y < 0) { pos[i][1] = 0; vel[i][1] = -velY * collisionDamping; }
-    if (h < y) { pos[i][1] = h; vel[i][1] = -velY * collisionDamping; }
+    if (x < 0) { posX[i] = 0; velX[i] = -velXv * collisionDamping; }
+    if (w < x) { posX[i] = w; velX[i] = -velXv * collisionDamping; }
+    if (y < 0) { posY[i] = 0; velY[i] = -velYv * collisionDamping; }
+    if (h < y) { posY[i] = h; velY[i] = -velYv * collisionDamping; }
 }
 
 void World::updateColor() {
@@ -322,7 +349,7 @@ void World::updateColor() {
     int color1[3] = {0,0,255};
     int color2[3] = {255,0,0};
     for (int i = 0; i < activeParticles; ++i) {
-        float speed = std::sqrt(vel[i][0]*vel[i][0] + vel[i][1]*vel[i][1]);
+        float speed = std::sqrt(velX[i]*velX[i] + velY[i]*velY[i]);
         if (minSpeed > speed) minSpeed = speed;
         if (maxSpeed < speed) maxSpeed = speed;
         speeds[i] = speed;
@@ -331,9 +358,9 @@ void World::updateColor() {
         float normSpeed = (speeds[i] - minSpeed) / (maxSpeed - minSpeed);
         normSpeed = std::clamp(normSpeed, 0.0f, 1.0f);
         uint8_t byteVel = static_cast<uint8_t>(normSpeed * 255.0f);
-        color[i][0] = (255 - byteVel) * color1[0] + byteVel * color2[0];
-        color[i][1] = (255 - byteVel) * color1[1] + byteVel * color2[1];
-        color[i][2] = (255 - byteVel) * color1[2] + byteVel * color2[2];
+        colorR[i] = (255 - byteVel) * color1[0] + byteVel * color2[0];
+        colorG[i] = (255 - byteVel) * color1[1] + byteVel * color2[1];
+        colorB[i] = (255 - byteVel) * color1[2] + byteVel * color2[2];
     }
 }
 
@@ -346,8 +373,8 @@ float World::calcDensity(int particleIndex) {
     influences.resize(otherIndexes.size());
     for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
         int j = otherIndexes[idx];
-        float dx = predpos[j][0] - predpos[particleIndex][0];
-        float dy = predpos[j][1] - predpos[particleIndex][1];
+        float dx = predPosX[j] - predPosX[particleIndex];
+        float dy = predPosY[j] - predPosY[particleIndex];
         distances[idx] = std::sqrt(dx*dx + dy*dy);
     }
 #ifdef USE_CUDA
@@ -377,8 +404,8 @@ void World::calcPressureForce(float pressureForce[], int particleIndex) {
     auto otherIndexes = querysize[particleIndex];
     for (int otherIndex : otherIndexes) {
         if (particleIndex == otherIndex) continue;
-        float offsetX = pos[otherIndex][0] - pos[particleIndex][0];
-        float offsetY = pos[otherIndex][1] - pos[particleIndex][1];
+        float offsetX = posX[otherIndex] - posX[particleIndex];
+        float offsetY = posY[otherIndex] - posY[particleIndex];
         float dist = std::sqrt(offsetX*offsetX + offsetY*offsetY);
         if (dist > smoothingRadius) continue;
         float dirX = 0.0f;
@@ -415,8 +442,8 @@ void World::calcInteractionForce(float outForce[], int particleIndex) const {
     outForce[0] = 0.0f;
     outForce[1] = 0.0f;
     ForcePoint p = forcePoint;
-    float offsetX = p.pos[0] - pos[particleIndex][0];
-    float offsetY = p.pos[1] - pos[particleIndex][1];
+    float offsetX = p.pos[0] - posX[particleIndex];
+    float offsetY = p.pos[1] - posY[particleIndex];
     float sqrDst = offsetX*offsetX + offsetY*offsetY;
     if (!(sqrDst < p.radius * p.radius)) return;
     float dirToForcePosX = 0.0f;
@@ -427,10 +454,10 @@ void World::calcInteractionForce(float outForce[], int particleIndex) const {
         dirToForcePosY = offsetY / dist;
     }
     float centreT = 1 - dist / p.radius;
-    float velX = vel[particleIndex][0];
-    float velY = vel[particleIndex][1];
-    outForce[0] = (dirToForcePosX * p.strength - velX) * centreT;
-    outForce[1] = (dirToForcePosY * p.strength - velY) * centreT;
+    float velXv = velX[particleIndex];
+    float velYv = velY[particleIndex];
+    outForce[0] = (dirToForcePosX * p.strength - velXv) * centreT;
+    outForce[1] = (dirToForcePosY * p.strength - velYv) * centreT;
 }
 
 } // namespace sph
