@@ -3,13 +3,17 @@
 
 #include "framework.h"
 #include "WindowsProject_optimization_SPH.h"
+#include <random>
 
 #define MAX_LOADSTRING 100
 #define _ENABLE_ATOMIC_ALIGNMENT_FIX
 
+thread_local std::mt19937 rng(std::random_device{}());
+thread_local std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
+
 float floatRand()
 {
-	return ((float)rand() / (float)RAND_MAX);
+        return dist01(rng);
 }
 
 //グリッドを用いて当たり判定の対象を絞るクラス

@@ -73,7 +73,7 @@ struct WorldConfig {
 
 class World {
 public:
-    static const int numParticle = 1000;
+    static constexpr int numParticle = 1000;
 
 private:
     int activeParticles = numParticle;
