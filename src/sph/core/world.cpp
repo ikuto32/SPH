@@ -351,19 +351,20 @@ float World::calcDensity(int particleIndex) {
         distances[idx] = std::sqrt(dx*dx + dy*dy);
     }
 #ifdef USE_CUDA
-    sph::calcSmoothingKernelCUDA(distances.data(),
-                                influences.data(),
+    CUDA_CHECK(cudaMemcpy(d_dist_buffer, distances.data(),
+                         otherIndexes.size() * sizeof(float),
+                         cudaMemcpyHostToDevice));
+    sph::calcSmoothingKernelGPU(d_dist_buffer, d_out_buffer,
                                 smoothingRadius,
-                                static_cast<int>(otherIndexes.size()),
-                                d_dist_buffer,
-                                d_out_buffer);
+                                static_cast<int>(otherIndexes.size()));
+    CUDA_CHECK(cudaMemcpy(influences.data(), d_out_buffer,
+                         otherIndexes.size() * sizeof(float),
+                         cudaMemcpyDeviceToHost));
 #else
-    sph::calcSmoothingKernelCUDA(distances.data(),
+    sph::calcSmoothingKernelCPU(distances.data(),
                                 influences.data(),
                                 smoothingRadius,
-                                static_cast<int>(otherIndexes.size()),
-                                nullptr,
-                                nullptr);
+                                static_cast<int>(otherIndexes.size()));
 #endif
     for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
         int j = otherIndexes[idx];

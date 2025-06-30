@@ -20,11 +20,13 @@ int main() {
     float* d_out = nullptr;
     CUDA_CHECK(cudaMalloc(&d_in, n * sizeof(float)));
     CUDA_CHECK(cudaMalloc(&d_out, n * sizeof(float)));
-    sph::calcSmoothingKernelCUDA(distances.data(), gpu.data(), radius, n, d_in, d_out);
+    CUDA_CHECK(cudaMemcpy(d_in, distances.data(), n * sizeof(float), cudaMemcpyHostToDevice));
+    sph::calcSmoothingKernelGPU(d_in, d_out, radius, n);
+    CUDA_CHECK(cudaMemcpy(gpu.data(), d_out, n * sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaFree(d_in));
     CUDA_CHECK(cudaFree(d_out));
 #else
-    sph::calcSmoothingKernelCUDA(distances.data(), gpu.data(), radius, n, nullptr, nullptr);
+    sph::calcSmoothingKernelCPU(distances.data(), gpu.data(), radius, n);
 #endif
     for (int i = 0; i < n; ++i) {
         assert(std::abs(cpu[i] - gpu[i]) < 1e-5f);

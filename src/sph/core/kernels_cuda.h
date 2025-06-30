@@ -19,20 +19,22 @@ namespace sph {
 #ifdef __CUDACC__
 __global__ void calcSmoothingKernelKernel(const float* dist, float* out, float radius, int n);
 #endif
-void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n,
-                             float* d_in, float* d_out);
 
-#else // !USE_CUDA
+// Calculate the kernel on the GPU. The input and output pointers must already
+// reside on the device; this function performs no memory copies.
+void calcSmoothingKernelGPU(const float* d_dist, float* d_out, float radius, int n);
 
-inline void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n,
-                                    float*, float*)
+#endif // USE_CUDA
+
+// Pure CPU implementation used when CUDA is unavailable or when running on the
+// host even in CUDA builds.
+inline void calcSmoothingKernelCPU(const float* dist, float* out, float radius, int n)
 {
     for (int i = 0; i < n; ++i) {
         out[i] = calcSmoothingKernel(dist[i], radius);
     }
 }
 
-#endif // USE_CUDA
 
 } // namespace sph
 
