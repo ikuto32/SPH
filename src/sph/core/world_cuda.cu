@@ -14,8 +14,8 @@ __global__ void predictedPosKernel(float* posX, float* posY,
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
         velY[idx] += gravity * dt;
-        predX[idx] = posX[idx] + velX[idx] * (1.0f/120.0f);
-        predY[idx] = posY[idx] + velY[idx] * (1.0f/120.0f);
+        predX[idx] = posX[idx] + velX[idx] * dt;
+        predY[idx] = posY[idx] + velY[idx] * dt;
     }
 }
 
