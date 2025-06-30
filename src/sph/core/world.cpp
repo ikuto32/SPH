@@ -1,10 +1,14 @@
 #include "world.h"
 #include <chrono>
+#include <random>
 
 namespace sph {
 
+thread_local std::mt19937 rng(std::random_device{}());
+thread_local std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
+
 float floatRand() {
-    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    return dist01(rng);
 }
 
 GridMap::GridMap(float width, float height, float radius)
@@ -363,8 +367,8 @@ void World::calcPressureForce(float pressureForce[], int particleIndex) {
         float dirX = 0.0f;
         float dirY = 0.0f;
         if (dist <= FLT_EPSILON) {
-            dirX = floatRand() - 0.5f;
-            dirY = floatRand() - 0.5f;
+            dirX = dist01(rng) - 0.5f;
+            dirY = dist01(rng) - 0.5f;
         } else {
             dirX = offsetX / dist;
             dirY = offsetY / dist;
