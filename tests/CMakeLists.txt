@@ -8,6 +8,10 @@ add_executable(test_kernel_compare test_kernel_compare.cpp)
 target_link_libraries(test_kernel_compare PRIVATE sph)
 add_test(NAME cpp_test_kernel_compare COMMAND test_kernel_compare)
 
+add_executable(test_profile test_profile.cpp)
+target_link_libraries(test_profile PRIVATE sph)
+add_test(NAME cpp_test_profile COMMAND test_profile)
+
 add_test(NAME python_tests
           COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
 )

@@ -46,6 +46,19 @@ struct ForcePoint {
     float strength;
 };
 
+struct ProfileInfo {
+    double predictedPosMs = 0.0;
+    double gridRegisterMs = 0.0;
+    double queryMs = 0.0;
+    double densityMs = 0.0;
+    double pressureMs = 0.0;
+    double interactionMs = 0.0;
+    double updatePosMs = 0.0;
+    double fixPosMs = 0.0;
+    double colorMs = 0.0;
+    size_t memTransferBytes = 0;
+};
+
 struct WorldConfig {
     float worldWidth = 20.0f;
     float worldHeight = 10.0f;
@@ -63,6 +76,7 @@ public:
     static const int numParticle = 1000;
 
 private:
+    int activeParticles = numParticle;
     const int particleRadius = 5;
 
     float gravity = 9.8f;
@@ -114,17 +128,20 @@ public:
     float getPressureMultiplier() const { return pressureMultiplier; }
     float getDelta() const { return delta; }
     float getCollisionDamping() const { return collisionDamping; }
+    void setActiveParticleCount(int n);
+    int getActiveParticleCount() const { return activeParticles; }
 
     void update(float deltaTime);
+    void updateWithStats(float deltaTime, ProfileInfo& info);
     const float (*getPositions() const)[2] { return pos; }
     const float (*getVelocities() const)[2] { return vel; }
 
 private:
-    void predictedPos(float deltaTime);
+    void predictedPos(float deltaTime, ProfileInfo* info = nullptr);
     void updateDensity(int particleIndex);
     void updatePressureForce(int particleIndex);
     void updateInteractionForce(int particleIndex);
-    void updatePosition(float deltaTime);
+    void updatePosition(float deltaTime, ProfileInfo* info = nullptr);
     void fixPositionFromWorldSize(int i);
     void updateColor();
     float calcDensity(int particleIndex);
