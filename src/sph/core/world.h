@@ -16,11 +16,18 @@ namespace sph {
 
 float floatRand();
 #ifdef USE_CUDA
-void predictedPosCUDA(float* d_pos, float* d_vel, float* d_predpos,
+void predictedPosCUDA(float* d_posX, float* d_posY,
+                      float* d_velX, float* d_velY,
+                      float* d_predX, float* d_predY,
                       float gravity, float dt, int n);
-void updatePositionCUDA(float* d_pos, float* d_vel, float* d_pressure,
-                        float* d_interaction, float drag, float dt, int n);
-void fixPositionCUDA(float* d_pos, float* d_vel, float width, float height,
+void updatePositionCUDA(float* d_posX, float* d_posY,
+                        float* d_velX, float* d_velY,
+                        float* d_pressureX, float* d_pressureY,
+                        float* d_interactionX, float* d_interactionY,
+                        float drag, float dt, int n);
+void fixPositionCUDA(float* d_posX, float* d_posY,
+                     float* d_velX, float* d_velY,
+                     float width, float height,
                      float damping, int n);
 #endif
 
@@ -90,28 +97,28 @@ private:
     float delta = 0.0f;
     float drag = 0.9999f;
 
-    float pos[numParticle][2];
-    float predpos[numParticle][2];
-    float vel[numParticle][2];
-    float density[numParticle];
-    float pressureAccelerations[numParticle][2];
-    float interactionForce[numParticle][2];
-    int color[numParticle][3];
+    std::vector<float> posX, posY;
+    std::vector<float> predPosX, predPosY;
+    std::vector<float> velX, velY;
+    std::vector<float> density;
+    std::vector<float> pressureX, pressureY;
+    std::vector<float> interactionX, interactionY;
+    std::vector<int> colorR, colorG, colorB;
     std::vector<std::vector<int>> querysize;
     std::vector<int> iterator;
-    float mass[numParticle];
+    std::vector<float> mass;
 
     ForcePoint forcePoint;
     GridMap gridmap;
 #ifdef USE_CUDA
     float* d_dist_buffer = nullptr;
     float* d_out_buffer = nullptr;
-    float* d_pos = nullptr;
-    float* d_predpos = nullptr;
-    float* d_vel = nullptr;
+    float *d_posX = nullptr, *d_posY = nullptr;
+    float *d_predPosX = nullptr, *d_predPosY = nullptr;
+    float *d_velX = nullptr, *d_velY = nullptr;
     float* d_density = nullptr;
-    float* d_pressure = nullptr;
-    float* d_interaction = nullptr;
+    float *d_pressureX = nullptr, *d_pressureY = nullptr;
+    float *d_interactionX = nullptr, *d_interactionY = nullptr;
 #endif
 
 public:
@@ -135,8 +142,10 @@ public:
 
     void update(float deltaTime);
     void updateWithStats(float deltaTime, ProfileInfo& info);
-    const float (*getPositions() const)[2] { return pos; }
-    const float (*getVelocities() const)[2] { return vel; }
+    const std::vector<float>& getPosX() const { return posX; }
+    const std::vector<float>& getPosY() const { return posY; }
+    const std::vector<float>& getVelX() const { return velX; }
+    const std::vector<float>& getVelY() const { return velY; }
 
 private:
     void predictedPos(float deltaTime, ProfileInfo* info = nullptr);

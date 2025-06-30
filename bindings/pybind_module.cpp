@@ -24,14 +24,28 @@ public:
 
     py::array_t<float> get_positions() const {
         constexpr int N = sph::World::numParticle;
-        const float (*pos)[2] = world.getPositions();
-        return py::array_t<float>({N, 2}, &pos[0][0]);
+        auto arr = py::array_t<float>({N, 2});
+        auto buf = arr.mutable_unchecked<2>();
+        const auto& x = world.getPosX();
+        const auto& y = world.getPosY();
+        for (int i = 0; i < N; ++i) {
+            buf(i, 0) = x[i];
+            buf(i, 1) = y[i];
+        }
+        return arr;
     }
 
     py::array_t<float> get_velocities() const {
         constexpr int N = sph::World::numParticle;
-        const float (*vel)[2] = world.getVelocities();
-        return py::array_t<float>({N, 2}, &vel[0][0]);
+        auto arr = py::array_t<float>({N, 2});
+        auto buf = arr.mutable_unchecked<2>();
+        const auto& x = world.getVelX();
+        const auto& y = world.getVelY();
+        for (int i = 0; i < N; ++i) {
+            buf(i, 0) = x[i];
+            buf(i, 1) = y[i];
+        }
+        return arr;
     }
 
     float width() const { return world.getWorldWidth(); }
