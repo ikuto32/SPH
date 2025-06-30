@@ -1,11 +1,27 @@
 #include <iostream>
+#include <vector>
+#include <cstdlib>
 #include "sph/core/world.h"
 
-int main() {
-    const int counts[] = {100, 500, sph::World::numParticle};
-    double totals[3] = {0.0};
+int main(int argc, char* argv[]) {
+    std::vector<int> counts = {100, 500, sph::World::numParticle};
+#ifdef USE_CUDA
+    if (argc > 1) {
+        counts.push_back(std::atoi(argv[1]));
+    }
+#else
+    // Running millions of particles on the CPU is too slow for CI, so ignore
+    // any user supplied count and clamp the maximum to a small value.
+    if (argc > 1) {
+        std::cout << "CUDA support not enabled - ignoring custom particle count" << std::endl;
+    }
+    if (counts.back() > 1000) {
+        counts.back() = 1000;
+    }
+#endif
+    std::vector<double> totals(counts.size(), 0.0);
 
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < counts.size(); ++i) {
         int n = counts[i];
         sph::World w;
         w.setActiveParticleCount(n);
@@ -41,7 +57,7 @@ int main() {
     }
 
     std::cout << "=== Total time ratios (relative to " << counts[0] << ") ===" << std::endl;
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < counts.size(); ++i) {
         std::cout << "N=" << counts[i] << ": " << (totals[i] / totals[0]) << std::endl;
     }
     return 0;
