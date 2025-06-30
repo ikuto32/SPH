@@ -37,7 +37,7 @@ public:
     const std::vector<int>& getChunk(int chunkX, int chunkY) const;
     void registerTarget(int target, float x, float y);
     void unregisterAll();
-    std::vector<int> findNeighborhood(float x, float y, float radius);
+    void findNeighborhood(float x, float y, float radius, std::vector<int>& out) const;
 };
 
 struct ForcePoint {
