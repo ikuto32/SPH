@@ -299,8 +299,8 @@ void World::predictedPos(float deltaTime, ProfileInfo* info) {
     for (int i = 0; i < activeParticles; ++i) {
         velX[i] += 0.0f;
         velY[i] += mass[i] * gravity * deltaTime;
-        predPosX[i] = posX[i] + velX[i] * 1.0f / 120.0f;
-        predPosY[i] = posY[i] + velY[i] * 1.0f / 120.0f;
+        predPosX[i] = posX[i] + velX[i] * deltaTime;
+        predPosY[i] = posY[i] + velY[i] * deltaTime;
     }
 #endif
 }
