@@ -3,6 +3,8 @@
 
 namespace sph {
 
+const int World::numParticle;
+
 float floatRand() {
     return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 }
@@ -35,8 +37,8 @@ void GridMap::unregisterAll() {
     }
 }
 
-std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
-    std::vector<int> out;
+void GridMap::findNeighborhood(float x, float y, float radius, std::vector<int>& out) const {
+    out.clear();
     int centerChunkX = static_cast<int>(x / chunkRange);
     int centerChunkY = static_cast<int>(y / chunkRange);
     int radiusChunk = static_cast<int>(std::ceil(radius / chunkRange));
@@ -53,7 +55,6 @@ std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
             out.insert(out.end(), chunk.begin(), chunk.end());
         }
     }
-    return out;
 }
 
 World::World(const WorldConfig& config)
@@ -154,7 +155,7 @@ void World::update(float deltaTime) {
 
     querysize.resize(activeParticles);
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
-        querysize[idx] = gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius);
+        gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius, querysize[idx]);
     });
 
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateDensity(idx); });
@@ -184,7 +185,7 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
     t0 = std::chrono::high_resolution_clock::now();
     querysize.resize(activeParticles);
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){
-        querysize[idx] = gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius);
+        gridmap.findNeighborhood(pos[idx][0], pos[idx][1], smoothingRadius, querysize[idx]);
     });
     t1 = std::chrono::high_resolution_clock::now();
     info.queryMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
@@ -298,7 +299,8 @@ void World::fixPositionFromWorldSize(int i) {
 }
 
 void World::updateColor() {
-    std::vector<float> speeds(activeParticles);
+    static std::vector<float> speeds;
+    speeds.resize(activeParticles);
     float minSpeed = FLT_MAX;
     float maxSpeed = 0.0f;
     int color1[3] = {0,0,255};
@@ -321,15 +323,17 @@ void World::updateColor() {
 
 float World::calcDensity(int particleIndex) {
     float densityVal = 0.0f;
-    auto otherIndexes = querysize[particleIndex];
-    std::vector<float> distances(otherIndexes.size());
+    const auto& otherIndexes = querysize[particleIndex];
+    thread_local std::vector<float> distances;
+    thread_local std::vector<float> influences;
+    distances.resize(otherIndexes.size());
+    influences.resize(otherIndexes.size());
     for (size_t idx = 0; idx < otherIndexes.size(); ++idx) {
         int j = otherIndexes[idx];
         float dx = predpos[j][0] - predpos[particleIndex][0];
         float dy = predpos[j][1] - predpos[particleIndex][1];
         distances[idx] = std::sqrt(dx*dx + dy*dy);
     }
-    std::vector<float> influences(otherIndexes.size());
 #ifdef USE_CUDA
     sph::calcSmoothingKernelCUDA(distances.data(),
                                 influences.data(),

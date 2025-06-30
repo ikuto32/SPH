@@ -84,9 +84,9 @@ public:
 	}
 
 	//近傍を探す
-	std::vector<int> findNeighborhood(float x, float y, float radius)
-	{
-		std::vector<int> out;
+        void findNeighborhood(float x, float y, float radius, std::vector<int>& out)
+        {
+                out.clear();
 
 		int centerChunkX = (int)(x / this->chunkRange);
 		int centerChunkY = (int)(y / this->chunkRange);
@@ -106,13 +106,11 @@ public:
 				if (x1 < 0 || x1 >= this->numChunkWidth) continue;
 				if (y1 < 0 || y1 >= this->numChunkHeight) continue;
 
-				std::vector<int> chunk = this->getChunk(x1, y1);
-				out.insert(std::end(out), std::begin(chunk), std::end(chunk));
-			}
-		}
-
-		return out;
-	}
+                                std::vector<int> chunk = this->getChunk(x1, y1);
+                                out.insert(std::end(out), std::begin(chunk), std::end(chunk));
+                        }
+                }
+        }
 };
 
 
@@ -262,9 +260,9 @@ public:
 			});
 
 		querysize.resize(numParticle);
-		std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int particleIndex) {
-			querysize[particleIndex] = gridmap.findNeighborhood(pos[particleIndex][0], pos[particleIndex][1], smoothingRadius);
-			});
+                std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int particleIndex) {
+                        gridmap.findNeighborhood(pos[particleIndex][0], pos[particleIndex][1], smoothingRadius, querysize[particleIndex]);
+                        });
 
 		std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int particleIndex) {
 			updateDensity(particleIndex);
