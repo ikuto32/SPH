@@ -12,6 +12,13 @@ add_executable(test_profile test_profile.cpp)
 target_link_libraries(test_profile PRIVATE sph)
 add_test(NAME cpp_test_profile COMMAND test_profile)
 
+if(USE_CUDA AND SPH_ENABLE_HASH2D)
+    add_executable(test_grid2d test_grid2d.cu)
+    set_target_properties(test_grid2d PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_link_libraries(test_grid2d PRIVATE sph)
+    add_test(NAME cpp_test_grid2d COMMAND test_grid2d)
+endif()
+
 add_test(NAME python_tests
           COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}
 )
