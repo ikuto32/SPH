@@ -32,6 +32,27 @@ int main(int argc, char* argv[]) {
                        info.updatePosMs + info.fixPosMs + info.colorMs;
         totals[i] = total;
 
+        double fps = total > 0 ? 1000.0 / total : 0.0;
+
+        double maxMs = info.predictedPosMs;
+        const char* maxLabel = "predictedPos";
+        struct Part { const char* name; double ms; } parts[] = {
+            {"gridRegister", info.gridRegisterMs},
+            {"query", info.queryMs},
+            {"density", info.densityMs},
+            {"pressure", info.pressureMs},
+            {"interaction", info.interactionMs},
+            {"updatePosition", info.updatePosMs},
+            {"fixPosition", info.fixPosMs},
+            {"color", info.colorMs},
+        };
+        for (const auto& p : parts) {
+            if (p.ms > maxMs) {
+                maxMs = p.ms;
+                maxLabel = p.name;
+            }
+        }
+
         auto print = [&](const char* name, double ms) {
             std::cout << name << " " << ms << " ms (";
             if (total > 0) {
@@ -44,6 +65,7 @@ int main(int argc, char* argv[]) {
 
         std::cout << "==== Particles: " << n << " ====" << std::endl;
         std::cout << "Total time: " << total << " ms\n";
+        std::cout << "Processing speed: " << fps << " steps/s\n";
         print("predictedPos", info.predictedPosMs);
         print("gridRegister", info.gridRegisterMs);
         print("query", info.queryMs);
@@ -53,6 +75,7 @@ int main(int argc, char* argv[]) {
         print("updatePosition", info.updatePosMs);
         print("fixPosition", info.fixPosMs);
         print("color", info.colorMs);
+        std::cout << "Bottleneck: " << maxLabel << " (" << maxMs << " ms)\n";
         std::cout << "Memory transferred: " << info.memTransferBytes << " bytes\n\n";
     }
 
