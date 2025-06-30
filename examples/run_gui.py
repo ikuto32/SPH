@@ -1,10 +1,12 @@
 import time
 import pygame
 from _sph import PyWorld
+import _sph
 
 
 def main():
     world = PyWorld()
+    gpu_search = getattr(_sph, "hash2d_enabled", False)
     scale = 40
     width = int(world.width() * scale)
     height = int(world.height() * scale)
@@ -64,6 +66,8 @@ def main():
             text = f"Paused | Time: {proc_time:.2f} ms"
         else:
             text = f"FPS: {clock.get_fps():.2f} | Time: {proc_time:.2f} ms"
+        mode = "GPU" if gpu_search else "CPU"
+        text += f" | Neighbour search: {mode}"
         img = font.render(text, True, (255, 0, 0))
         screen.blit(img, (10, 10))
         pygame.display.flip()

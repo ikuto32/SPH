@@ -102,4 +102,10 @@ PYBIND11_MODULE(_sph, m) {
             py::arg("radius"),
             py::arg("strength"))
         .def("delete_interaction_force", &PyWorld::delete_interaction_force);
+
+#ifdef SPH_ENABLE_HASH2D
+    m.attr("hash2d_enabled") = true;
+#else
+    m.attr("hash2d_enabled") = false;
+#endif
 }
