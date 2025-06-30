@@ -24,17 +24,12 @@ __global__ void calcSmoothingKernelKernel(const float* dist, float* out, float r
     }
 }
 
-void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n,
-                             float* d_in, float* d_out)
+void calcSmoothingKernelGPU(const float* d_dist, float* d_out, float radius, int n)
 {
-    CUDA_CHECK(cudaMemcpy(d_in, dist, n * sizeof(float), cudaMemcpyHostToDevice));
-
     int threads = 256;
     int blocks = (n + threads - 1) / threads;
-    calcSmoothingKernelKernel<<<blocks, threads>>>(d_in, d_out, radius, n);
+    calcSmoothingKernelKernel<<<blocks, threads>>>(d_dist, d_out, radius, n);
     CUDA_KERNEL_CHECK();
-
-    CUDA_CHECK(cudaMemcpy(out, d_out, n * sizeof(float), cudaMemcpyDeviceToHost));
 }
 
 } // namespace sph
