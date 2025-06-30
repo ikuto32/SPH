@@ -162,7 +162,15 @@ void World::update(float deltaTime) {
     std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateInteractionForce(idx); });
 
     updatePosition(deltaTime);
-    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ fixPositionFromWorldSize(idx); });
+#ifdef USE_CUDA
+    fixPositionCUDA(d_pos, d_vel, worldSize[0], worldSize[1],
+                   collisionDamping, activeParticles);
+    CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
+#else
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(),
+                  [&](int idx) { fixPositionFromWorldSize(idx); });
+#endif
     updateColor();
 }
 
@@ -210,7 +218,16 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
     info.updatePosMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
     t0 = std::chrono::high_resolution_clock::now();
-    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ fixPositionFromWorldSize(idx); });
+#ifdef USE_CUDA
+    fixPositionCUDA(d_pos, d_vel, worldSize[0], worldSize[1],
+                   collisionDamping, activeParticles);
+    CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
+    info.memTransferBytes += sizeof(pos) + sizeof(vel);
+#else
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(),
+                  [&](int idx){ fixPositionFromWorldSize(idx); });
+#endif
     t1 = std::chrono::high_resolution_clock::now();
     info.fixPosMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
@@ -222,14 +239,12 @@ void World::updateWithStats(float deltaTime, ProfileInfo& info) {
 
 void World::predictedPos(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
-    CUDA_CHECK(cudaMemcpy(d_pos, pos, sizeof(pos), cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(pos);
-    CUDA_CHECK(cudaMemcpy(d_vel, vel, sizeof(vel), cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(vel);
-    predictedPosCUDA(d_pos, d_vel, d_predpos, gravity, deltaTime, activeParticles);
+    predictedPosCUDA(d_pos, d_vel, d_predpos, gravity, deltaTime,
+                     activeParticles);
     CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
     if (info) info->memTransferBytes += sizeof(vel);
-    CUDA_CHECK(cudaMemcpy(predpos, d_predpos, sizeof(predpos), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(predpos, d_predpos, sizeof(predpos),
+                          cudaMemcpyDeviceToHost));
     if (info) info->memTransferBytes += sizeof(predpos);
 #else
     for (int i = 0; i < activeParticles; ++i) {
@@ -259,19 +274,16 @@ void World::updateInteractionForce(int i) {
 
 void World::updatePosition(float deltaTime, ProfileInfo* info) {
 #ifdef USE_CUDA
-    CUDA_CHECK(cudaMemcpy(d_pos, pos, sizeof(pos), cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(pos);
-    CUDA_CHECK(cudaMemcpy(d_vel, vel, sizeof(vel), cudaMemcpyHostToDevice));
-    if (info) info->memTransferBytes += sizeof(vel);
-    CUDA_CHECK(cudaMemcpy(d_pressure, pressureAccelerations, sizeof(pressureAccelerations), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_pressure, pressureAccelerations,
+                          sizeof(pressureAccelerations),
+                          cudaMemcpyHostToDevice));
     if (info) info->memTransferBytes += sizeof(pressureAccelerations);
-    CUDA_CHECK(cudaMemcpy(d_interaction, interactionForce, sizeof(interactionForce), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(d_interaction, interactionForce,
+                          sizeof(interactionForce),
+                          cudaMemcpyHostToDevice));
     if (info) info->memTransferBytes += sizeof(interactionForce);
-    updatePositionCUDA(d_pos, d_vel, d_pressure, d_interaction, drag, deltaTime, activeParticles);
-    CUDA_CHECK(cudaMemcpy(pos, d_pos, sizeof(pos), cudaMemcpyDeviceToHost));
-    if (info) info->memTransferBytes += sizeof(pos);
-    CUDA_CHECK(cudaMemcpy(vel, d_vel, sizeof(vel), cudaMemcpyDeviceToHost));
-    if (info) info->memTransferBytes += sizeof(vel);
+    updatePositionCUDA(d_pos, d_vel, d_pressure, d_interaction, drag,
+                       deltaTime, activeParticles);
 #else
     for (int i = 0; i < activeParticles; ++i) {
         vel[i][0] += (pressureAccelerations[i][0] + interactionForce[i][0]) * deltaTime;

@@ -20,6 +20,8 @@ void predictedPosCUDA(float* d_pos, float* d_vel, float* d_predpos,
                       float gravity, float dt, int n);
 void updatePositionCUDA(float* d_pos, float* d_vel, float* d_pressure,
                         float* d_interaction, float drag, float dt, int n);
+void fixPositionCUDA(float* d_pos, float* d_vel, float width, float height,
+                     float damping, int n);
 #endif
 
 class GridMap {
