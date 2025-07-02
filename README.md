@@ -1,5 +1,7 @@
 # SPH
 
+For details on optional CUDA neighbour-search support see [docs/GPU_Spatial_Hash_2D.md](docs/GPU_Spatial_Hash_2D.md).
+
 This repository contains a simple Smoothed Particle Hydrodynamics (SPH) simulation.
 
 ## Build instructions
