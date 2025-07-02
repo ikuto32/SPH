@@ -15,12 +15,22 @@ public:
         float drag = 0.9999f,
         float gravity = 9.8f,
         float collision_damping = 1.0f,
-        float delta = 0.0f)
+        float delta = 0.0f,
+        bool  use_gpu = false)
         : world(sph::WorldConfig{width, height, smoothing_radius, target_density,
                                pressure_multiplier, delta, drag, gravity,
-                               collision_damping}) {}
+                               collision_damping}),
+          use_gpu(use_gpu) {}
 
-    void step(float dt) { world.update(dt); }
+    void step(float dt) {
+#ifdef SPH_ENABLE_HASH2D
+        if (use_gpu) {
+            world.stepGPU(dt);
+            return;
+        }
+#endif
+        world.update(dt);
+    }
 
     py::array_t<float> get_positions() const {
         constexpr int N = sph::World::numParticle;
@@ -48,6 +58,7 @@ public:
 
 private:
     sph::World world;
+    bool use_gpu = false;
 };
 
 PYBIND11_MODULE(_sph, m) {
@@ -62,7 +73,8 @@ PYBIND11_MODULE(_sph, m) {
                 float,
                 float,
                 float,
-                float>(),
+                float,
+                bool>(),
             py::arg("width") = 20.0f,
             py::arg("height") = 10.0f,
             py::arg("smoothing_radius") = 0.8f,
@@ -71,7 +83,8 @@ PYBIND11_MODULE(_sph, m) {
             py::arg("drag") = 0.9999f,
             py::arg("gravity") = 9.8f,
             py::arg("collision_damping") = 1.0f,
-            py::arg("delta") = 0.0f)
+            py::arg("delta") = 0.0f,
+            py::arg("use_gpu") = false)
         .def("step", &PyWorld::step, py::arg("dt"))
         .def("get_positions", &PyWorld::get_positions)
         .def("get_velocities", &PyWorld::get_velocities)
