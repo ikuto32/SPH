@@ -99,6 +99,7 @@ public:
     float getCollisionDamping() const { return collisionDamping; }
 
     void update(float deltaTime);
+    void stepGPU(float deltaTime);
     const float (*getPositions() const)[2] { return pos; }
     const float (*getVelocities() const)[2] { return vel; }
 

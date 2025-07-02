@@ -122,6 +122,10 @@ void World::update(float deltaTime) {
     updateColor();
 }
 
+void World::stepGPU(float deltaTime) {
+    update(deltaTime);
+}
+
 void World::predictedPos(float deltaTime) {
     for (int i = 0; i < numParticle; ++i) {
         vel[i][0] += 0.0f;
