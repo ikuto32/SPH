@@ -28,7 +28,7 @@ private:
 
 public:
     GridMap(float width, float height, float radius);
-    std::vector<int> getChunk(int chunkX, int chunkY);
+    const std::vector<int>& getChunk(int chunkX, int chunkY) const;
     void registerTarget(int target, float x, float y);
     void unregisterAll();
     std::vector<int> findNeighborhood(float x, float y, float radius);
@@ -81,9 +81,14 @@ private:
 
     ForcePoint forcePoint;
     GridMap gridmap;
+#ifdef USE_CUDA
+    float* d_dist_buffer = nullptr;
+    float* d_out_buffer = nullptr;
+#endif
 
 public:
     World(const WorldConfig& config = WorldConfig());
+    ~World();
 
     void setInteractionForce(float posX, float posY, float radius, float strength);
     void deleteInteractionForce();
