@@ -26,22 +26,65 @@ __global__ void calcSmoothingKernelKernel(const float* dist, float* out, float r
 
 void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
 {
+    int deviceCount = 0;
+    cudaError_t status = cudaGetDeviceCount(&deviceCount);
+    if (status != cudaSuccess || deviceCount == 0) {
+        // Fallback to CPU implementation when CUDA is not available
+        for (int i = 0; i < n; ++i) {
+            out[i] = calcSmoothingKernel(dist[i], radius);
+        }
+        return;
+    }
+
     float* d_in = nullptr;
     float* d_out = nullptr;
-    CUDA_CHECK(cudaMalloc(&d_in, n * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&d_out, n * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(d_in, dist, n * sizeof(float), cudaMemcpyHostToDevice));
+    status = cudaMalloc(&d_in, n * sizeof(float));
+    if (status != cudaSuccess) {
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
+    status = cudaMalloc(&d_out, n * sizeof(float));
+    if (status != cudaSuccess) {
+        cudaFree(d_in);
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
+    status = cudaMemcpy(d_in, dist, n * sizeof(float), cudaMemcpyHostToDevice);
+    if (status != cudaSuccess) {
+        cudaFree(d_in);
+        cudaFree(d_out);
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
 
     int threads = 256;
     int blocks = (n + threads - 1) / threads;
     calcSmoothingKernelKernel<<<blocks, threads>>>(d_in, d_out, radius, n);
-    CUDA_KERNEL_CHECK();
-    CUDA_CHECK(cudaDeviceSynchronize());
+    status = cudaGetLastError();
+    if (status != cudaSuccess) {
+        cudaFree(d_in);
+        cudaFree(d_out);
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
+    status = cudaDeviceSynchronize();
+    if (status != cudaSuccess) {
+        cudaFree(d_in);
+        cudaFree(d_out);
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
 
-    CUDA_CHECK(cudaMemcpy(out, d_out, n * sizeof(float), cudaMemcpyDeviceToHost));
+    status = cudaMemcpy(out, d_out, n * sizeof(float), cudaMemcpyDeviceToHost);
+    if (status != cudaSuccess) {
+        cudaFree(d_in);
+        cudaFree(d_out);
+        for (int i = 0; i < n; ++i) out[i] = calcSmoothingKernel(dist[i], radius);
+        return;
+    }
 
-    CUDA_CHECK(cudaFree(d_in));
-    CUDA_CHECK(cudaFree(d_out));
+    cudaFree(d_in);
+    cudaFree(d_out);
 }
 
 } // namespace sph
