@@ -16,10 +16,11 @@ public:
         float gravity = 9.8f,
         float collision_damping = 1.0f,
         float delta = 0.0f,
-        bool  use_gpu = false)
+        bool  use_gpu = false,
+        int   num_particles = sph::World::defaultNumParticles)
         : world(sph::WorldConfig{width, height, smoothing_radius, target_density,
                                pressure_multiplier, delta, drag, gravity,
-                               collision_damping}),
+                               collision_damping, num_particles}),
           use_gpu(use_gpu) {}
 
     void step(float dt) {
@@ -33,15 +34,17 @@ public:
     }
 
     py::array_t<float> get_positions() const {
-        constexpr int N = sph::World::numParticle;
-        const float (*pos)[2] = world.getPositions();
-        return py::array_t<float>({N, 2}, &pos[0][0]);
+        size_t N = world.getNumParticles();
+        const auto& pos = world.getPositions();
+        return py::array_t<float>({static_cast<py::ssize_t>(N), static_cast<py::ssize_t>(2)},
+                                  reinterpret_cast<const float*>(pos.data()));
     }
 
     py::array_t<float> get_velocities() const {
-        constexpr int N = sph::World::numParticle;
-        const float (*vel)[2] = world.getVelocities();
-        return py::array_t<float>({N, 2}, &vel[0][0]);
+        size_t N = world.getNumParticles();
+        const auto& vel = world.getVelocities();
+        return py::array_t<float>({static_cast<py::ssize_t>(N), static_cast<py::ssize_t>(2)},
+                                  reinterpret_cast<const float*>(vel.data()));
     }
 
     float width() const { return world.getWorldWidth(); }
@@ -74,7 +77,8 @@ PYBIND11_MODULE(_sph, m) {
                 float,
                 float,
                 float,
-                bool>(),
+                bool,
+                int>(),
             py::arg("width") = 20.0f,
             py::arg("height") = 10.0f,
             py::arg("smoothing_radius") = 0.8f,
@@ -84,7 +88,8 @@ PYBIND11_MODULE(_sph, m) {
             py::arg("gravity") = 9.8f,
             py::arg("collision_damping") = 1.0f,
             py::arg("delta") = 0.0f,
-            py::arg("use_gpu") = false)
+            py::arg("use_gpu") = false,
+            py::arg("num_particles") = sph::World::defaultNumParticles)
         .def("step", &PyWorld::step, py::arg("dt"))
         .def("get_positions", &PyWorld::get_positions)
         .def("get_velocities", &PyWorld::get_velocities)

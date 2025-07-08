@@ -43,3 +43,8 @@ def test_custom_physics_parameters():
     # ensure stepping does not raise
     w.step(1.0 / 60.0)
 
+
+def test_custom_particle_count():
+    w = _sph.PyWorld(num_particles=10)
+    assert w.get_positions().shape[0] == 10
+

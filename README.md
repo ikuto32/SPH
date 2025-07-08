@@ -43,7 +43,7 @@ The bindings expose a `PyWorld` class:
 
 ```python
 from _sph import PyWorld
-w = PyWorld()
+w = PyWorld(num_particles=500)  # particle count can be changed
 w.step(1/60.0)
 positions = w.get_positions()
 ```
