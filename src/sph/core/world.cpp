@@ -56,7 +56,8 @@ std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
 }
 
 World::World(const WorldConfig& config)
-    : gravity(config.gravity),
+    : numParticle(config.numParticles),
+      gravity(config.gravity),
       worldSize{config.worldWidth, config.worldHeight},
       collisionDamping(config.collisionDamping),
       smoothingRadius(config.smoothingRadius),
@@ -67,23 +68,30 @@ World::World(const WorldConfig& config)
       forcePoint{{0,0},0,0},
       gridmap(worldSize[0], worldSize[1], smoothingRadius)
 {
-    std::memset(pos, 0, sizeof(pos));
-    std::memset(predpos, 0, sizeof(predpos));
-    std::memset(vel, 0, sizeof(vel));
-    std::memset(density, 0, sizeof(density));
-    std::memset(pressureAccelerations, 0, sizeof(pressureAccelerations));
-    std::memset(interactionForce, 0, sizeof(interactionForce));
-    for (int i = 0; i < numParticle; ++i) mass[i] = 1.0f;
+    pos.resize(numParticle);
+    predpos.resize(numParticle);
+    vel.resize(numParticle);
+    density.assign(numParticle, 0.0f);
+    pressureAccelerations.resize(numParticle);
+    interactionForce.resize(numParticle);
+    color.resize(numParticle);
+    mass.assign(numParticle, 1.0f);
 
     for (int i = 0; i < numParticle; ++i) {
-        int a = static_cast<int>(std::sqrt(numParticle));
+        int a = static_cast<int>(std::sqrt(static_cast<float>(numParticle)));
         int row = i / a;
         int col = i % a;
         pos[i][0] = (col / static_cast<float>(a)) * worldSize[0];
         pos[i][1] = (row / static_cast<float>(a)) * worldSize[1];
+        predpos[i][0] = 0.0f;
+        predpos[i][1] = 0.0f;
+        vel[i][0] = 0.0f;
+        vel[i][1] = 0.0f;
+        pressureAccelerations[i] = {0.0f, 0.0f};
+        interactionForce[i] = {0.0f, 0.0f};
+        color[i] = {255,255,255};
     }
 
-    std::memset(color, 255, sizeof(color));
     iterator.resize(numParticle);
     for (int i = 0; i < numParticle; ++i) iterator[i] = i;
 }
@@ -176,7 +184,7 @@ void World::fixPositionFromWorldSize(int i) {
 }
 
 void World::updateColor() {
-    float speeds[numParticle];
+    std::vector<float> speeds(numParticle);
     float minSpeed = FLT_MAX;
     float maxSpeed = 0.0f;
     int color1[3] = {0,0,255};

@@ -2,12 +2,13 @@
 #define SPH_CORE_WORLD_H
 
 #include <vector>
+#include <array>
+#include <cstddef>
 #include <algorithm>
 #include <execution>
 #include <cmath>
 #include <cfloat>
 #include <cstdint>
-#include <cstring>
 
 #include "kernels.h"
 #include "kernels_cuda.h"
@@ -50,15 +51,17 @@ struct WorldConfig {
     float drag = 0.9999f;
     float gravity = 9.8f;
     float collisionDamping = 1.0f;
+    int   numParticles = 1000;
 };
 
 class World {
 public:
-    static const int numParticle = 1000;
+    static constexpr int defaultNumParticles = 1000;
 
 private:
     const int particleRadius = 5;
 
+    int numParticle = defaultNumParticles;
     float gravity = 9.8f;
     float worldSize[2] = {20.0f, 10.0f};
     float collisionDamping = 1.0f;
@@ -68,16 +71,16 @@ private:
     float delta = 0.0f;
     float drag = 0.9999f;
 
-    float pos[numParticle][2];
-    float predpos[numParticle][2];
-    float vel[numParticle][2];
-    float density[numParticle];
-    float pressureAccelerations[numParticle][2];
-    float interactionForce[numParticle][2];
-    int color[numParticle][3];
+    std::vector<std::array<float, 2>> pos;
+    std::vector<std::array<float, 2>> predpos;
+    std::vector<std::array<float, 2>> vel;
+    std::vector<float> density;
+    std::vector<std::array<float, 2>> pressureAccelerations;
+    std::vector<std::array<float, 2>> interactionForce;
+    std::vector<std::array<int, 3>> color;
     std::vector<std::vector<int>> querysize;
     std::vector<int> iterator;
-    float mass[numParticle];
+    std::vector<float> mass;
 
     ForcePoint forcePoint;
     GridMap gridmap;
@@ -100,8 +103,9 @@ public:
 
     void update(float deltaTime);
     void stepGPU(float deltaTime);
-    const float (*getPositions() const)[2] { return pos; }
-    const float (*getVelocities() const)[2] { return vel; }
+    size_t getNumParticles() const { return numParticle; }
+    const std::vector<std::array<float,2>>& getPositions() const { return pos; }
+    const std::vector<std::array<float,2>>& getVelocities() const { return vel; }
 
 private:
     void predictedPos(float deltaTime);
