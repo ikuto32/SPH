@@ -37,8 +37,8 @@ GPU neighbour search.
    persistent grid.
 3. Subsequent density and force kernels reuse the neighbour lists.
 
-The CMake configuration sets `CMAKE_CUDA_ARCHITECTURES=90` so the build
-targets compute capability&nbsp;9.0 (Hopper). Systems with compute
-capability&nbsp;8.x can still run the code, but `CMAKE_CUDA_ARCHITECTURES`
-must be adjusted to match the hardware before configuring the project.
+The CMake configuration sets `CMAKE_CUDA_ARCHITECTURES=80 86 89` so the build
+targets compute capability&nbsp;8.x devices, including Ada Lovelace GPUs such as
+the RTX&nbsp;4090. Systems with different hardware can adjust
+`CMAKE_CUDA_ARCHITECTURES` accordingly before configuring the project.
 
