@@ -299,5 +299,9 @@ std::vector<int> World::queryNeighbors(float x, float y) const {
     return result;
 }
 
+std::vector<int> World::querySpatialHash(float x, float y) const {
+    return gridmap.findNeighborhood(x, y, smoothingRadius);
+}
+
 } // namespace sph
 
