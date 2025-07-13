@@ -56,7 +56,7 @@ After building the Python extension you can generate a scatter plot of the
 particle positions with colors representing their speed:
 
 ```console
-PYTHONPATH=build/bindings python examples/plot_snapshot.py
+PYTHONPATH=build python examples/plot_snapshot.py
 ```
 
 Running the script produces an image named `snapshot.png` in the
