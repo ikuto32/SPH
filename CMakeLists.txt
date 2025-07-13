@@ -7,22 +7,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_CUDA "Build with CUDA support" ON)
 option(SPH_ENABLE_HASH2D "Enable GPU 2-D spatial hashing" ${USE_CUDA})
+option(DEBUG_GPU "Enable additional CUDA checks" OFF)
 
 if(USE_CUDA)
     set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     add_compile_definitions(USE_CUDA)
+    if(DEBUG_GPU)
+        add_compile_definitions(DEBUG_GPU)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g -G -lineinfo -O0")
+    else()
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo -O3 --use_fast_math")
+    endif()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)  # LTOは nvcc が苦手なのでOFF
 endif()
-
 set(CMAKE_CUDA_ARCHITECTURES 90)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo -O3 --use_fast_math")
 
 add_library(sph_gpu STATIC
     src/sph/gpu/hash_grid_2d.cu
     src/sph/gpu/neighbor_search_2d.cu)
 
 target_link_libraries(sph_gpu PRIVATE cudadevrt)
+target_include_directories(sph_gpu PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 
 find_package(pybind11 CONFIG REQUIRED)

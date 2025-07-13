@@ -2,6 +2,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 #include <cuda_runtime.h>
+#include "../debug_gpu.hpp"
 
 namespace sph {
 
@@ -48,11 +49,13 @@ void findCellStartKernel(const uint32_t* hashBuf,
 void HashGrid2D::build(uint32_t N, cudaStream_t s) {
     constexpr int BLK = 256;
     computeHashKernel<<<(N + BLK - 1) / BLK, BLK, 0, s>>>(particles.pos, hashBuf, idxBuf, invCell, N);
+    CUDA_KERNEL_CHECK();
     thrust::device_ptr<uint32_t> dH(hashBuf), dI(idxBuf);
     thrust::sort_by_key(thrust::cuda::par.on(s), dH, dH + N, dI);
-    cudaMemsetAsync(cellStart, 0xFF, gridCells * sizeof(uint32_t), s);
-    cudaMemsetAsync(cellEnd, 0x00, gridCells * sizeof(uint32_t), s);
+    CUDA_TRY(cudaMemsetAsync(cellStart, 0xFF, gridCells * sizeof(uint32_t), s));
+    CUDA_TRY(cudaMemsetAsync(cellEnd, 0x00, gridCells * sizeof(uint32_t), s));
     findCellStartKernel<<<(N + BLK - 1) / BLK, BLK, 0, s>>>(hashBuf, cellStart, cellEnd, N);
+    CUDA_KERNEL_CHECK();
 }
 
 } // namespace sph
