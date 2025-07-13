@@ -21,7 +21,10 @@ if(USE_CUDA)
     endif()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)  # LTOは nvcc が苦手なのでOFF
 endif()
-set(CMAKE_CUDA_ARCHITECTURES 90)
+# Target Ada Lovelace GPUs such as the RTX 4090 while still supporting
+# other compute capability 8.x devices. The architectures are listed in
+# ascending order so CMake generates code for each supported target.
+set(CMAKE_CUDA_ARCHITECTURES 80 86 89)
 
 add_library(sph_gpu STATIC
     src/sph/gpu/hash_grid_2d.cu
