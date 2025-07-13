@@ -109,6 +109,8 @@ public:
 
     // query neighbours around an arbitrary point
     std::vector<int> queryNeighbors(float x, float y) const;
+    // return indices from spatial hash before distance filtering
+    std::vector<int> querySpatialHash(float x, float y) const;
 
 private:
     void predictedPos(float deltaTime);

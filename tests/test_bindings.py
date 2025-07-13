@@ -39,6 +39,16 @@ def test_query_neighbors_returns_indices():
     assert 0 in neighbours
 
 
+def test_query_spatial_hash_returns_candidates():
+    w = _sph.PyWorld()
+    w.step(1.0 / 60.0)
+    pos = w.get_positions()
+    x, y = pos[0]
+    candidates = w.query_spatial_hash(float(x), float(y))
+    assert isinstance(candidates, list)
+    assert 0 in candidates
+
+
 def test_custom_parameters_affect_world_size():
     w = _sph.PyWorld(width=5.0, height=3.0)
     assert w.width() == 5.0

@@ -24,6 +24,7 @@ def main():
     # store current query position for neighbour highlight
     query_pos = None
     neighbour_indices = []
+    hash_indices = []
 
     while running:
         start_time = time.perf_counter()
@@ -52,6 +53,7 @@ def main():
             world.delete_interaction_force()
             query_pos = None
             neighbour_indices = []
+            hash_indices = []
 
         if not paused or step_once:
             world.step(dt)
@@ -60,11 +62,17 @@ def main():
         if query_pos is not None:
             # query neighbours using the C++ implementation
             neighbour_indices = list(world.query_neighbors(query_pos[0], query_pos[1]))
+            hash_indices = list(world.query_spatial_hash(query_pos[0], query_pos[1]))
         proc_time = (time.perf_counter() - start_time) * 1000.0
 
         screen.fill((0, 0, 0))
         for idx, (x, y) in enumerate(positions):
-            color = (0, 255, 0) if idx in neighbour_indices else (255, 255, 255)
+            if idx in neighbour_indices:
+                color = (0, 255, 0)
+            elif idx in hash_indices:
+                color = (0, 0, 255)
+            else:
+                color = (255, 255, 255)
             pygame.draw.circle(
                 screen,
                 color,

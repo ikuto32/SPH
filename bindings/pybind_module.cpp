@@ -64,6 +64,10 @@ public:
         return world.queryNeighbors(x, y);
     }
 
+    std::vector<int> query_spatial_hash(float x, float y) const {
+        return world.querySpatialHash(x, y);
+    }
+
 private:
     sph::World world;
     bool use_gpu = false;
@@ -113,6 +117,11 @@ PYBIND11_MODULE(_sph, m) {
         .def(
             "query_neighbors",
             &PyWorld::query_neighbors,
+            py::arg("x"),
+            py::arg("y"))
+        .def(
+            "query_spatial_hash",
+            &PyWorld::query_spatial_hash,
             py::arg("x"),
             py::arg("y"))
         .def("delete_interaction_force", &PyWorld::delete_interaction_force);
