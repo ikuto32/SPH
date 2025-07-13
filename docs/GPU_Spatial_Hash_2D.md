@@ -37,6 +37,8 @@ GPU neighbour search.
    persistent grid.
 3. Subsequent density and force kernels reuse the neighbour lists.
 
-The default build targets compute capability 9.0 (Hopper) but can run
-on any GPU of capability 8.0 or newer.
+The CMake configuration sets `CMAKE_CUDA_ARCHITECTURES=90` so the build
+targets compute capability&nbsp;9.0 (Hopper). Systems with compute
+capability&nbsp;8.x can still run the code, but `CMAKE_CUDA_ARCHITECTURES`
+must be adjusted to match the hardware before configuring the project.
 
