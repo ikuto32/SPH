@@ -1,5 +1,6 @@
 #include "hash_grid_2d.hpp"
 #include <cuda_runtime.h>
+#include "../debug_gpu.hpp"
 
 namespace sph {
 
@@ -18,6 +19,11 @@ void neighbourSearchKernel(const float2* pos,
                            uint32_t N,
                            uint32_t* outCount) {
     uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+#ifdef DEBUG_GPU
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        printf("kernel alive\n");
+    }
+#endif
     if (i >= N) return;
     // Placeholder: zero neighbours
     outCount[i] = 0;
