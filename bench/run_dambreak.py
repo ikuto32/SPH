@@ -3,7 +3,7 @@ import numpy as np
 from _sph import PyWorld
 
 for n in [1_000_000 * i for i in range(1, 11)]:
-    w = PyWorld()
+    w = PyWorld(num_particles=n)
     start = time.time()
     w.step(1/60.0)
     t = time.time() - start
