@@ -29,6 +29,16 @@ def test_interaction_force_methods():
     w.delete_interaction_force()
 
 
+def test_query_neighbors_returns_indices():
+    w = _sph.PyWorld()
+    w.step(1.0 / 60.0)
+    pos = w.get_positions()
+    x, y = pos[0]
+    neighbours = w.query_neighbors(float(x), float(y))
+    assert isinstance(neighbours, list)
+    assert 0 in neighbours
+
+
 def test_custom_parameters_affect_world_size():
     w = _sph.PyWorld(width=5.0, height=3.0)
     assert w.width() == 5.0
