@@ -21,6 +21,10 @@ def main():
     force_radius = 2.0
     force_strength = 10.0
 
+    # store current query position for neighbour highlight
+    query_pos = None
+    neighbour_indices = []
+
     while running:
         start_time = time.perf_counter()
         for event in pygame.event.get():
@@ -43,22 +47,42 @@ def main():
             world_y = y / scale
             strength = force_strength if left else -force_strength
             world.set_interaction_force(world_x, world_y, force_radius, strength)
+            query_pos = (world_x, world_y)
         else:
             world.delete_interaction_force()
+            query_pos = None
+            neighbour_indices = []
 
         if not paused or step_once:
             world.step(dt)
             step_once = False
         positions = world.get_positions()
+        if query_pos is not None:
+            # determine which particles are within the neighbour search radius
+            neighbour_indices = [
+                i
+                for i, (px, py) in enumerate(positions)
+                if (px - query_pos[0]) ** 2 + (py - query_pos[1]) ** 2
+                <= world.smoothing_radius() ** 2
+            ]
         proc_time = (time.perf_counter() - start_time) * 1000.0
 
         screen.fill((0, 0, 0))
-        for x, y in positions:
+        for idx, (x, y) in enumerate(positions):
+            color = (0, 255, 0) if idx in neighbour_indices else (255, 255, 255)
             pygame.draw.circle(
                 screen,
-                (255, 255, 255),
+                color,
                 (int(x * scale), int(y * scale)),
                 2,
+            )
+        if query_pos is not None:
+            pygame.draw.circle(
+                screen,
+                (0, 255, 0),
+                (int(query_pos[0] * scale), int(query_pos[1] * scale)),
+                int(world.smoothing_radius() * scale),
+                1,
             )
         if paused:
             text = f"Paused | Time: {proc_time:.2f} ms"
