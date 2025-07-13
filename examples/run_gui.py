@@ -25,6 +25,8 @@ def main():
     query_pos = None
     neighbour_indices = []
     hash_indices = []
+    ref_count = 0
+    cull_count = 0
 
     while running:
         start_time = time.perf_counter()
@@ -54,6 +56,8 @@ def main():
             query_pos = None
             neighbour_indices = []
             hash_indices = []
+            ref_count = 0
+            cull_count = 0
 
         if not paused or step_once:
             world.step(dt)
@@ -63,6 +67,8 @@ def main():
             # query neighbours using the C++ implementation
             neighbour_indices = list(world.query_neighbors(query_pos[0], query_pos[1]))
             hash_indices = list(world.query_spatial_hash(query_pos[0], query_pos[1]))
+            ref_count = len(hash_indices)
+            cull_count = len(neighbour_indices)
         proc_time = (time.perf_counter() - start_time) * 1000.0
 
         screen.fill((0, 0, 0))
@@ -87,10 +93,16 @@ def main():
                 int(world.smoothing_radius() * scale),
                 1,
             )
+        info = []
         if paused:
-            text = f"Paused | Time: {proc_time:.2f} ms"
+            info.append("Paused")
         else:
-            text = f"FPS: {clock.get_fps():.2f} | Time: {proc_time:.2f} ms"
+            info.append(f"FPS: {clock.get_fps():.2f}")
+        if query_pos is not None:
+            info.append(f"Refs: {ref_count}")
+            info.append(f"Cull: {cull_count}")
+        info.append(f"Time: {proc_time:.2f} ms")
+        text = " | ".join(info)
         img = font.render(text, True, (255, 0, 0))
         screen.blit(img, (10, 10))
         pygame.display.flip()
