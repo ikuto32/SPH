@@ -54,6 +54,19 @@ void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
         int deviceCount = 0;
         CUDA_TRY(cudaGetDeviceCount(&deviceCount));
         gpu_available = (deviceCount > 0);
+
+        if (gpu_available) {
+            // Query the first device and verify the compute capability
+            cudaDeviceProp prop{};
+            CUDA_TRY(cudaGetDeviceProperties(&prop, 0));
+            // Require compute capability 8.0 or newer
+            constexpr int requiredCap = 80;
+            int capability = prop.major * 10 + prop.minor;
+            if (capability < requiredCap) {
+                gpu_available = false;
+            }
+        }
+
         initialized = true;
         if (gpu_available) std::atexit(freeBuffers);
     }
