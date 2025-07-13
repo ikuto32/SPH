@@ -61,3 +61,14 @@ PYTHONPATH=build/bindings python examples/plot_snapshot.py
 
 Running the script produces an image named `snapshot.png` in the
 `examples` directory.
+
+## Benchmark
+
+A benchmark script reports the time for a single simulation step while
+increasing the particle count:
+
+```console
+PYTHONPATH=build python bench/run_dambreak.py
+```
+
+See [docs/benchmarks.md](docs/benchmarks.md) for more details.

@@ -36,6 +36,9 @@ The benchmark script steps the simulation for increasing particle counts:
 PYTHONPATH=build python bench/run_dambreak.py
 ```
 
+The output lists the step time in milliseconds. See
+[benchmarks.md](benchmarks.md) for further details.
+
 ## Python usage
 Run the Pygame example after building the extension:
 ```console
