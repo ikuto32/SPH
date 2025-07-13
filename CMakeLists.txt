@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.27)
 project(SPH LANGUAGES CXX CUDA)
+enable_testing()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_CUDA "Build with CUDA support" ON)
-option(SPH_ENABLE_HASH2D "Enable GPU 2-D spatial hashing" ON)
+option(SPH_ENABLE_HASH2D "Enable GPU 2-D spatial hashing" ${USE_CUDA})
 
 if(USE_CUDA)
     set(CMAKE_CUDA_STANDARD 20)
