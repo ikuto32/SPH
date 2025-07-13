@@ -199,9 +199,9 @@ void World::updateColor() {
         float normSpeed = (speeds[i] - minSpeed) / (maxSpeed - minSpeed);
         normSpeed = std::clamp(normSpeed, 0.0f, 1.0f);
         uint8_t byteVel = static_cast<uint8_t>(normSpeed * 255.0f);
-        color[i][0] = (255 - byteVel) * color1[0] + byteVel * color2[0];
-        color[i][1] = (255 - byteVel) * color1[1] + byteVel * color2[1];
-        color[i][2] = (255 - byteVel) * color1[2] + byteVel * color2[2];
+        color[i][0] = ((255 - byteVel) * color1[0] + byteVel * color2[0]) / 255;
+        color[i][1] = ((255 - byteVel) * color1[1] + byteVel * color2[1]) / 255;
+        color[i][2] = ((255 - byteVel) * color1[2] + byteVel * color2[2]) / 255;
     }
 }
 
