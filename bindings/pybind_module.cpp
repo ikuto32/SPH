@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 #include "sph/core/world.h"
 
 namespace py = pybind11;
@@ -59,6 +60,10 @@ public:
 
     void delete_interaction_force() { world.deleteInteractionForce(); }
 
+    std::vector<int> query_neighbors(float x, float y) const {
+        return world.queryNeighbors(x, y);
+    }
+
 private:
     sph::World world;
     bool use_gpu = false;
@@ -105,5 +110,10 @@ PYBIND11_MODULE(_sph, m) {
             py::arg("y"),
             py::arg("radius"),
             py::arg("strength"))
+        .def(
+            "query_neighbors",
+            &PyWorld::query_neighbors,
+            py::arg("x"),
+            py::arg("y"))
         .def("delete_interaction_force", &PyWorld::delete_interaction_force);
 }

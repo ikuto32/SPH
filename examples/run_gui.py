@@ -58,13 +58,8 @@ def main():
             step_once = False
         positions = world.get_positions()
         if query_pos is not None:
-            # determine which particles are within the neighbour search radius
-            neighbour_indices = [
-                i
-                for i, (px, py) in enumerate(positions)
-                if (px - query_pos[0]) ** 2 + (py - query_pos[1]) ** 2
-                <= world.smoothing_radius() ** 2
-            ]
+            # query neighbours using the C++ implementation
+            neighbour_indices = list(world.query_neighbors(query_pos[0], query_pos[1]))
         proc_time = (time.perf_counter() - start_time) * 1000.0
 
         screen.fill((0, 0, 0))

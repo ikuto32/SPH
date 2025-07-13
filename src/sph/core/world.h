@@ -29,10 +29,10 @@ private:
 
 public:
     GridMap(float width, float height, float radius);
-    std::vector<int> getChunk(int chunkX, int chunkY);
+    std::vector<int> getChunk(int chunkX, int chunkY) const;
     void registerTarget(int target, float x, float y);
     void unregisterAll();
-    std::vector<int> findNeighborhood(float x, float y, float radius);
+    std::vector<int> findNeighborhood(float x, float y, float radius) const;
 };
 
 struct ForcePoint {
@@ -106,6 +106,9 @@ public:
     size_t getNumParticles() const { return numParticle; }
     const std::vector<std::array<float,2>>& getPositions() const { return pos; }
     const std::vector<std::array<float,2>>& getVelocities() const { return vel; }
+
+    // query neighbours around an arbitrary point
+    std::vector<int> queryNeighbors(float x, float y) const;
 
 private:
     void predictedPos(float deltaTime);

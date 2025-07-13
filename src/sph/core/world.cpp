@@ -16,7 +16,7 @@ GridMap::GridMap(float width, float height, float radius)
     chunks.assign(numChunk, std::vector<int>());
 }
 
-std::vector<int> GridMap::getChunk(int chunkX, int chunkY) {
+std::vector<int> GridMap::getChunk(int chunkX, int chunkY) const {
     return chunks[chunkY * numChunkWidth + chunkX];
 }
 
@@ -34,7 +34,7 @@ void GridMap::unregisterAll() {
     }
 }
 
-std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) {
+std::vector<int> GridMap::findNeighborhood(float x, float y, float radius) const {
     std::vector<int> out;
     int centerChunkX = static_cast<int>(x / chunkRange);
     int centerChunkY = static_cast<int>(y / chunkRange);
@@ -282,6 +282,21 @@ void World::calcInteractionForce(float outForce[], int particleIndex) const {
     float velY = vel[particleIndex][1];
     outForce[0] = (dirToForcePosX * p.strength - velX) * centreT;
     outForce[1] = (dirToForcePosY * p.strength - velY) * centreT;
+}
+
+std::vector<int> World::queryNeighbors(float x, float y) const {
+    auto candidates = gridmap.findNeighborhood(x, y, smoothingRadius);
+    std::vector<int> result;
+    result.reserve(candidates.size());
+    float r2 = smoothingRadius * smoothingRadius;
+    for (int idx : candidates) {
+        float dx = pos[idx][0] - x;
+        float dy = pos[idx][1] - y;
+        if (dx * dx + dy * dy <= r2) {
+            result.push_back(idx);
+        }
+    }
+    return result;
 }
 
 } // namespace sph
