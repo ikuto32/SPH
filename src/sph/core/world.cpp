@@ -1,4 +1,7 @@
 #include "world.h"
+#ifdef SPH_ENABLE_HASH2D
+#include "../debug_gpu.hpp"
+#endif
 
 namespace sph {
 
@@ -131,7 +134,59 @@ void World::update(float deltaTime) {
 }
 
 void World::stepGPU(float deltaTime) {
+#ifdef SPH_ENABLE_HASH2D
+    predictedPos(deltaTime);
+    gridmap.unregisterAll();
+    std::vector<int> v = iterator;
+    std::for_each(std::execution::seq, v.begin(), v.end(), [&](int idx){
+        gridmap.registerTarget(idx, pos[idx][0], pos[idx][1]);
+    });
+
+    allocateDeviceBuffers();
+
+    std::vector<float2> hPos(numParticle);
+    for (int i = 0; i < numParticle; ++i) {
+        hPos[i] = make_float2(pos[i][0], pos[i][1]);
+    }
+    CUDA_TRY(cudaMemcpy(grid.particles.pos,
+                        hPos.data(),
+                        sizeof(float2) * numParticle,
+                        cudaMemcpyHostToDevice));
+
+    grid.build(numParticle);
+    grid.findNeighbors(numParticle, smoothingRadius, d_neighbors, d_counts);
+    CUDA_TRY(cudaDeviceSynchronize());
+
+    std::vector<uint32_t> hCounts(numParticle);
+    std::vector<uint32_t> hNeighbors(numParticle * MAX_NEIGHBORS);
+    CUDA_TRY(cudaMemcpy(hCounts.data(),
+                        d_counts,
+                        sizeof(uint32_t) * numParticle,
+                        cudaMemcpyDeviceToHost));
+    CUDA_TRY(cudaMemcpy(hNeighbors.data(),
+                        d_neighbors,
+                        sizeof(uint32_t) * numParticle * MAX_NEIGHBORS,
+                        cudaMemcpyDeviceToHost));
+
+    querysize.assign(numParticle, {});
+    for (int i = 0; i < numParticle; ++i) {
+        uint32_t c = hCounts[i];
+        querysize[i].resize(c);
+        for (uint32_t j = 0; j < c; ++j) {
+            querysize[i][j] = static_cast<int>(hNeighbors[i * MAX_NEIGHBORS + j]);
+        }
+    }
+
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateDensity(idx); });
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updatePressureForce(idx); });
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ updateInteractionForce(idx); });
+
+    updatePosition(deltaTime);
+    std::for_each(std::execution::par_unseq, v.begin(), v.end(), [&](int idx){ fixPositionFromWorldSize(idx); });
+    updateColor();
+#else
     update(deltaTime);
+#endif
 }
 
 void World::predictedPos(float deltaTime) {
@@ -302,6 +357,40 @@ std::vector<int> World::queryNeighbors(float x, float y) const {
 std::vector<int> World::querySpatialHash(float x, float y) const {
     return gridmap.findNeighborhood(x, y, smoothingRadius);
 }
+
+#ifdef SPH_ENABLE_HASH2D
+World::~World() { freeDeviceBuffers(); }
+
+void World::allocateDeviceBuffers() {
+    if (device_allocated) return;
+    uint32_t N = static_cast<uint32_t>(numParticle);
+    grid.gridDim = make_uint2(
+        static_cast<uint32_t>(std::ceil(worldSize[0] / smoothingRadius)) + 1,
+        static_cast<uint32_t>(std::ceil(worldSize[1] / smoothingRadius)) + 1);
+    grid.invCell = 1.0f / smoothingRadius;
+    grid.gridCells = grid.gridDim.x * grid.gridDim.y;
+    CUDA_TRY(cudaMalloc(&grid.particles.pos, N * sizeof(float2)));
+    CUDA_TRY(cudaMalloc(&grid.hashBuf, N * sizeof(uint32_t)));
+    CUDA_TRY(cudaMalloc(&grid.idxBuf, N * sizeof(uint32_t)));
+    CUDA_TRY(cudaMalloc(&grid.cellStart, grid.gridCells * sizeof(uint32_t)));
+    CUDA_TRY(cudaMalloc(&grid.cellEnd, grid.gridCells * sizeof(uint32_t)));
+    CUDA_TRY(cudaMalloc(&d_neighbors, N * MAX_NEIGHBORS * sizeof(uint32_t)));
+    CUDA_TRY(cudaMalloc(&d_counts, N * sizeof(uint32_t)));
+    device_allocated = true;
+}
+
+void World::freeDeviceBuffers() {
+    if (!device_allocated) return;
+    CUDA_TRY(cudaFree(grid.particles.pos));
+    CUDA_TRY(cudaFree(grid.hashBuf));
+    CUDA_TRY(cudaFree(grid.idxBuf));
+    CUDA_TRY(cudaFree(grid.cellStart));
+    CUDA_TRY(cudaFree(grid.cellEnd));
+    CUDA_TRY(cudaFree(d_neighbors));
+    CUDA_TRY(cudaFree(d_counts));
+    device_allocated = false;
+}
+#endif
 
 } // namespace sph
 
