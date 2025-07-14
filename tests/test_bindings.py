@@ -68,3 +68,50 @@ def test_custom_particle_count():
     w = _sph.PyWorld(num_particles=10)
     assert w.get_positions().shape[0] == 10
 
+
+def test_initial_velocities_zero():
+    w = _sph.PyWorld(num_particles=5)
+    vel = w.get_velocities()
+    assert vel.shape[0] == 5
+    assert np.all(vel == 0.0)
+
+
+def test_gravity_affects_velocity():
+    w = _sph.PyWorld(num_particles=5)
+    w.step(0.1)
+    vel = w.get_velocities()
+    # gravity acts downward so the mean y velocity becomes positive
+    assert np.mean(vel[:, 1]) > 0.0
+
+
+def test_query_neighbors_self_included():
+    w = _sph.PyWorld(num_particles=8)
+    # build the spatial hash without moving particles
+    w.step(0.0)
+    pos = w.get_positions()
+    for i, (x, y) in enumerate(pos):
+        if np.isnan(x) or np.isnan(y):
+            continue
+        neigh = w.query_neighbors(float(x), float(y))
+        assert i in neigh
+
+
+def test_neighbor_query_subset_of_spatial_hash():
+    w = _sph.PyWorld(num_particles=8)
+    w.step(0.0)
+    pos = w.get_positions()
+    x, y = pos[0]
+    neigh = set(w.query_neighbors(float(x), float(y)))
+    cand = set(w.query_spatial_hash(float(x), float(y)))
+    assert neigh.issubset(cand)
+
+
+def test_smoothing_radius_affects_neighbor_count():
+    w_small = _sph.PyWorld(num_particles=9, smoothing_radius=0.5)
+    w_large = _sph.PyWorld(num_particles=9, smoothing_radius=1.0)
+    pos = w_small.get_positions()
+    x, y = pos[0]
+    n_small = len(w_small.query_neighbors(float(x), float(y)))
+    n_large = len(w_large.query_neighbors(float(x), float(y)))
+    assert n_large >= n_small
+

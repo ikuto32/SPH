@@ -30,6 +30,16 @@ The project is built with CMake. Both CPU and CUDA builds are supported.
    The resulting `_sph` Python extension is created inside the `build`
    directory.
 
+## Running the tests
+
+After building the project you can execute the test suite with:
+
+```console
+ctest --output-on-failure
+```
+
+See [docs/testing.md](docs/testing.md) for details on the available tests.
+
 ## Using the Python module
 
 The bindings expose a `PyWorld` class:
