@@ -19,5 +19,10 @@ int main() {
     for (int i = 0; i < n; ++i) {
         assert(std::abs(cpu[i] - gpu[i]) < 1e-5f);
     }
+
+    // Ensure calling the CUDA kernel with zero length does not crash
+    std::vector<float> dummy_in(1), dummy_out(1);
+    sph::calcSmoothingKernelCUDA(dummy_in.data(), dummy_out.data(), radius, 0);
+
     return 0;
 }
