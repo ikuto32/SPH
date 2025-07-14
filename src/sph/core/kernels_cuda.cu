@@ -50,6 +50,9 @@ __global__ void calcSmoothingKernelKernel(const float* dist, float* out, float r
 
 void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
 {
+    if (n <= 0) {
+        return;
+    }
     if (!initialized) {
         int deviceCount = 0;
         CUDA_TRY(cudaGetDeviceCount(&deviceCount));
