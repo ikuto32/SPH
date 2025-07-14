@@ -12,6 +12,9 @@ if(SPH_ENABLE_HASH2D)
     add_executable(test_grid2d test_grid2d.cu)
     target_link_libraries(test_grid2d PRIVATE sph_gpu)
     add_test(NAME cuda_test_grid2d COMMAND test_grid2d)
+    add_executable(test_neighbor_compare test_neighbor_compare.cu)
+    target_link_libraries(test_neighbor_compare PRIVATE sph_gpu)
+    add_test(NAME cuda_test_neighbor_compare COMMAND test_neighbor_compare)
 endif()
 
 add_test(NAME python_tests
