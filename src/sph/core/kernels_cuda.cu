@@ -5,6 +5,7 @@
 
 #include <cmath>          // 必須
 #include <cstdlib>
+#include <mutex>
 #ifndef M_PI              // まだ無ければ自前で定義
 #define M_PI 3.14159265358979323846
 #endif
@@ -13,11 +14,12 @@ namespace sph {
 
 namespace {
     // Cached device buffers and CUDA availability flag
-    bool             initialized   = false;
     bool             gpu_available = false;
     float*           d_in          = nullptr;
     float*           d_out         = nullptr;
     int              buffer_size   = 0;
+    std::once_flag   init_flag;
+    std::mutex       kernel_mutex;
 
     void freeBuffers() {
         if (d_in)  CUDA_TRY(cudaFree(d_in));
@@ -26,34 +28,8 @@ namespace {
         d_out = nullptr;
         buffer_size = 0;
     }
-}
 
-__global__ void calcSmoothingKernelKernel(const float* dist, float* out, float radius, int n)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-#ifdef DEBUG_GPU
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        printf("kernel alive\n");
-    }
-#endif
-    if (idx < n) {
-        float d = dist[idx];
-        float val = 0.0f;
-        if (d < radius) {
-            float volume = (float)(M_PI * radius * radius * radius * radius) / 6.0f;
-            float t = radius - d;
-            val = t * t / volume;
-        }
-        out[idx] = val;
-    }
-}
-
-void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
-{
-    if (n <= 0) {
-        return;
-    }
-    if (!initialized) {
+    void initialize() {
         int deviceCount = 0;
         cudaError_t e = cudaGetDeviceCount(&deviceCount);
         if (e != cudaSuccess) {
@@ -89,9 +65,37 @@ void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
 #endif
         }
 
-        initialized = true;
         if (gpu_available) std::atexit(freeBuffers);
     }
+}
+
+__global__ void calcSmoothingKernelKernel(const float* dist, float* out, float radius, int n)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+#ifdef DEBUG_GPU
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        printf("kernel alive\n");
+    }
+#endif
+    if (idx < n) {
+        float d = dist[idx];
+        float val = 0.0f;
+        if (d < radius) {
+            float volume = (float)(M_PI * radius * radius * radius * radius) / 6.0f;
+            float t = radius - d;
+            val = t * t / volume;
+        }
+        out[idx] = val;
+    }
+}
+
+void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
+{
+    if (n <= 0) {
+        return;
+    }
+
+    std::call_once(init_flag, initialize);
 
     if (!gpu_available) {
         for (int i = 0; i < n; ++i) {
@@ -100,7 +104,9 @@ void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
         return;
     }
 
-    if (buffer_size != n) {
+    std::lock_guard<std::mutex> guard(kernel_mutex);
+
+    if (buffer_size < n) {
         freeBuffers();
         CUDA_TRY(cudaMalloc(&d_in, n * sizeof(float)));
         CUDA_TRY(cudaMalloc(&d_out, n * sizeof(float)));
