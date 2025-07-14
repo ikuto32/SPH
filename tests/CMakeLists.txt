@@ -21,3 +21,9 @@ set_tests_properties(python_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}"
 )
+
+if(USE_CUDA)
+    add_executable(test_device_query test_device_query.cpp)
+    target_link_libraries(test_device_query PRIVATE cuda_runtime)
+    add_test(NAME cuda_device_query COMMAND test_device_query)
+endif()

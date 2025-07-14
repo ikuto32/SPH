@@ -55,19 +55,38 @@ void calcSmoothingKernelCUDA(const float* dist, float* out, float radius, int n)
     }
     if (!initialized) {
         int deviceCount = 0;
-        CUDA_TRY(cudaGetDeviceCount(&deviceCount));
-        gpu_available = (deviceCount > 0);
+        cudaError_t e = cudaGetDeviceCount(&deviceCount);
+        if (e != cudaSuccess) {
+#ifdef DEBUG_GPU
+            fprintf(stderr, "cudaGetDeviceCount failed: %s\n", cudaGetErrorString(e));
+#endif
+            gpu_available = false;
+        } else {
+            gpu_available = (deviceCount > 0);
+        }
 
         if (gpu_available) {
             // Query the first device and verify the compute capability
             cudaDeviceProp prop{};
             CUDA_TRY(cudaGetDeviceProperties(&prop, 0));
+#ifdef DEBUG_GPU
+            fprintf(stderr, "CUDA device 0: %s (compute %d.%d)\n", prop.name, prop.major, prop.minor);
+#endif
             // Require compute capability 8.0 or newer
             constexpr int requiredCap = 80;
             int capability = prop.major * 10 + prop.minor;
             if (capability < requiredCap) {
+#ifdef DEBUG_GPU
+                fprintf(stderr,
+                        "Compute capability %d.%d below required 8.0, falling back to CPU\n",
+                        prop.major, prop.minor);
+#endif
                 gpu_available = false;
             }
+        } else {
+#ifdef DEBUG_GPU
+            fprintf(stderr, "No CUDA devices available or CUDA initialization failed\n");
+#endif
         }
 
         initialized = true;
