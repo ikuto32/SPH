@@ -12,6 +12,10 @@
 
 #include "kernels.h"
 #include "kernels_cuda.h"
+#ifdef SPH_ENABLE_HASH2D
+#include "sph/gpu/hash_grid_2d.hpp"
+#include <cuda_runtime.h>
+#endif
 
 namespace sph {
 
@@ -84,9 +88,18 @@ private:
 
     ForcePoint forcePoint;
     GridMap gridmap;
+#ifdef SPH_ENABLE_HASH2D
+    HashGrid2D grid;
+    uint32_t* d_neighbors = nullptr;
+    uint32_t* d_counts    = nullptr;
+    bool device_allocated = false;
+#endif
 
 public:
     World(const WorldConfig& config = WorldConfig());
+#ifdef SPH_ENABLE_HASH2D
+    ~World();
+#endif
 
     void setInteractionForce(float posX, float posY, float radius, float strength);
     void deleteInteractionForce();
@@ -125,6 +138,10 @@ private:
     float calcSharedPressure(float densityLeft, float densityRight) const;
     float convertDensityToPressure(float density) const;
     void calcInteractionForce(float outInteractionForce[], int particleIndex) const;
+#ifdef SPH_ENABLE_HASH2D
+    void allocateDeviceBuffers();
+    void freeDeviceBuffers();
+#endif
 };
 
 } // namespace sph
