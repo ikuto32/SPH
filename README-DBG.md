@@ -34,3 +34,13 @@ cuda-gdb ./app_debug
 
 The first launched kernel will print `kernel alive` once when built with
 `DEBUG_GPU` enabled, verifying that the device code executed.
+
+## Device capability test
+
+Run the `cuda_device_query` test to report the detected GPU and its compute
+capability:
+
+```bash
+cmake --build build --target test_device_query
+cd build && ctest -R cuda_device_query --output-on-failure
+```
