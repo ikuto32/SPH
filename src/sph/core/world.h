@@ -97,9 +97,7 @@ private:
 
 public:
     World(const WorldConfig& config = WorldConfig());
-#ifdef SPH_ENABLE_HASH2D
     ~World();
-#endif
 
     void setInteractionForce(float posX, float posY, float radius, float strength);
     void deleteInteractionForce();

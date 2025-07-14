@@ -358,9 +358,13 @@ std::vector<int> World::querySpatialHash(float x, float y) const {
     return gridmap.findNeighborhood(x, y, smoothingRadius);
 }
 
+World::~World() {
 #ifdef SPH_ENABLE_HASH2D
-World::~World() { freeDeviceBuffers(); }
+    freeDeviceBuffers();
+#endif
+}
 
+#ifdef SPH_ENABLE_HASH2D
 void World::allocateDeviceBuffers() {
     if (device_allocated) return;
     uint32_t N = static_cast<uint32_t>(numParticle);
