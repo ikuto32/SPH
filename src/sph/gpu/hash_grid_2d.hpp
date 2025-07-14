@@ -6,6 +6,8 @@
 
 namespace sph {
 
+inline constexpr uint32_t MAX_NEIGHBORS = 64;
+
 struct ParticleSoA {
     float2* pos;
     float2* vel;
@@ -25,6 +27,11 @@ struct HashGrid2D {
     ParticleSoA particles;
 
     void build(uint32_t N, cudaStream_t s = 0);
+    void findNeighbors(uint32_t N,
+                       float hh,
+                       uint32_t* neighborsOut,
+                       uint32_t* outCount,
+                       cudaStream_t s = 0);
 };
 
 } // namespace sph
