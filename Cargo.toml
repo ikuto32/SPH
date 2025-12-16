@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "sph-core",
+    "sph-cuda",
+    "sph-py",
+]
+resolver = "2"
+
+[workspace.dependencies]
+numpy = "0.21"
+pyo3 = { version = "0.21", features = ["extension-module"] }
+thiserror = "1.0"

@@ -1,0 +1,14 @@
+[package]
+name = "sph-cuda"
+version = "0.1.0"
+edition = "2021"
+description = "CUDA-accelerated utilities for SPH (feature gated)"
+license = "MIT"
+build = "build.rs"
+
+[features]
+default = []
+cuda = []
+
+[dependencies]
+thiserror.workspace = true
