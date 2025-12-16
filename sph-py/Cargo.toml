@@ -1,0 +1,20 @@
+[package]
+name = "sph-py"
+version = "0.1.0"
+edition = "2021"
+description = "PyO3 bindings for the SPH workspace"
+license = "MIT"
+
+[lib]
+name = "sph_py"
+crate-type = ["cdylib"]
+
+[features]
+default = []
+cuda = ["sph-core/cuda", "sph-cuda/cuda"]
+
+[dependencies]
+numpy.workspace = true
+pyo3.workspace = true
+sph-core = { path = "../sph-core", package = "sph-core" }
+sph-cuda = { path = "../sph-cuda", optional = true, default-features = false }

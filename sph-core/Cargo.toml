@@ -1,0 +1,13 @@
+[package]
+name = "sph-core"
+version = "0.1.0"
+edition = "2021"
+description = "CPU implementation of the SPH simulation core"
+license = "MIT"
+
+[features]
+default = []
+cuda = ["dep:sph-cuda"]
+
+[dependencies]
+sph-cuda = { path = "../sph-cuda", optional = true, default-features = false }
